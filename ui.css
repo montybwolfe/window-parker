@@ -1,205 +1,360 @@
+/* Window Parker: one stylesheet for the popup, Settings and the parking page.
+   A car park after hours, built like a plain utility: the computer's own font,
+   native controls, hairlines between zones. Amber only means parked or asleep;
+   azure only marks what you can press. Chrome 120 or later. */
+
 :root {
+  --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Daylight concrete */
   color-scheme: light;
-  font: 13px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --background: #fafafa; --text: #22252a; --muted: #62666e; --line: #e1e3e6;
-  --control: #fff; --control-border: #c4c8ce; --button: #f2f3f4;
-  /* Text boxes and menus need a 3:1 edge to be seen as fields; buttons are named by their text. */
-  --field-border: #8a8f97;
-  --accent: #245bc4; --accent-hover: #194aa6; --error: #a52a23;
-  --icon-edge: rgb(0 0 0 / .2);
-  background: var(--background); color: var(--text);
+  --page: #EBEBE8;        /* concrete: every page */
+  --field: #FFFFFF;       /* things you type into, and lists */
+  --button: #F6F6F4;      /* button face */
+  --button-hover: #FFFFFF;
+  --button-down: #DEDFDB;
+  --line: #D0D1CD;        /* hairlines between zones (decorative) */
+  --edge: #808589;        /* edges of controls: 3:1 or more on page and field */
+  --edge-hover: #5F6468;
+  --ink: #232323;         /* text */
+  --muted: #5B5F63;       /* help and secondary text */
+  --amber: #935A00;       /* parked or asleep, as text */
+  --press: #0265CB;       /* azure: default buttons, links, focus, checked controls */
+  --press-hover: #0155AC;
+  --press-down: #0155AC;
+  --link: #0265CB;
+  --on-press: #FFFFFF;
+  --focus: #0265CB;
+  --danger: #A3342B;      /* clearing actions and errors */
+  --danger-edge: #C0655C;
+  --danger-wash: #F6E5E2;
+  --wash: rgb(0 0 0 / .06); /* hover behind icon buttons and rows */
+  --favicon-edge: rgb(0 0 0 / .18);
+
+  accent-color: var(--press);
+  background: var(--page);
+  color: var(--ink);
+  font: 13px/1.4 var(--font);
 }
-* { box-sizing: border-box; }
-[hidden] { display: none !important; }
-/* Chrome's built-in stylesheet for extension pages shrinks body text to 75%;
-   inherit the intended 13px instead. */
-body { margin: 0; font: inherit; }
-h1, h2, p { margin: 0; }
-h1 { font-size: 22px; line-height: 1.25; font-weight: 600; letter-spacing: -.45px; }
-h2 { font-size: 13px; font-weight: 600; margin-bottom: 16px; }
-.muted, .hint { color: var(--muted); }
-.hint { display: block; font-size: 12px; line-height: 1.55; }
-.app-header { display: flex; align-items: center; gap: 12px; }
-.app-header img { flex: none; }
-.app-header p { margin-top: 3px; }
-.settings-page { max-width: 720px; margin: 44px auto 36px; padding: 0 32px; font-size: 14px; }
-.settings-page h1 { font-size: 24px; }
-.settings-page h2 { font-size: 15px; margin-bottom: 14px; }
-.settings-page .hint { font-size: 13px; }
-.settings-page .app-header { flex-wrap: wrap; gap: 14px; }
-.settings-page .app-header p { margin-top: 2px; }
-/* A small icon before each section heading. The heading text stays its name;
-   the icon is decoration (aria-hidden) and sized in the markup too. */
-.settings-page h2 { display: flex; align-items: center; gap: 8px; }
-.heading-icon { flex: none; color: var(--accent); }
-.settings-section.compact .heading-icon { width: 14px; height: 14px; color: inherit; }
-.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
-.check-row { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; margin: 13px 0; }
-.check-row > span { min-width: 0; }
-.check-row .hint { margin-top: 3px; }
-input[type=checkbox] { flex: none; width: 16px; height: 16px; margin: 3px 0 0; accent-color: var(--accent); }
-.enable-row { margin: 30px 0 26px; }
-.settings-section { border-top: 1px solid var(--line); padding: 24px 0; }
-.settings-section.compact { padding: 20px 0 14px; }
-.settings-section.compact h2 { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
-.settings-section.compact .check-row { font-size: 13px; margin: 8px 0; }
-.preference-row { display: grid; grid-template-columns: 1fr 210px; gap: 20px; align-items: center; margin: 14px 0; }
-.preference-row:first-of-type { margin-top: 0; }
-input, textarea, select, button { font: inherit; }
-input[type=number], select, textarea { color: var(--text); background: var(--control); border: 1px solid var(--field-border); border-radius: 5px; }
-input[type=number], select { height: 36px; }
-.select-wrap { position: relative; }
-.select-wrap::after { content: ''; position: absolute; right: 13px; top: 13px; width: 6px; height: 6px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg); pointer-events: none; }
-select { appearance: none; width: 100%; padding: 0 32px 0 10px; cursor: pointer; }
-.unit-control { display: flex; align-items: center; gap: 9px; }
-.unit-control input { width: 92px; min-width: 0; padding: 0 9px; font-variant-numeric: tabular-nums; }
-.unit-control span { color: var(--muted); font-size: 13px; }
-.section-note { margin-top: 10px; }
-.field { margin-top: 22px; }
-.field-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 6px 12px; margin-bottom: 6px; }
-.field-head > label { font-weight: 500; }
-.field-action { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-.settings-page .field-action .hint { font-size: 12px; }
-/* Quiet build metadata in the page's top-right corner: outside the content and
-   the header, and outside the Store's Settings crops. */
-.version-tag { position: absolute; top: 7px; right: 10px; margin: 0; font-size: 11px; line-height: 16px; color: var(--muted); font-variant-numeric: tabular-nums; }
-textarea { display: block; width: 100%; min-height: 108px; max-height: 320px; padding: 10px 12px; resize: vertical; font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
-.field > .hint { margin: 7px 0; }
-/* A site list that can't be used is kept as typed, and marked until it's fixed. */
-textarea[aria-invalid="true"] { border-color: var(--error); }
-summary { cursor: pointer; width: fit-content; }
-.safety-note { color: var(--muted); font-size: 13px; margin-top: 12px; }
-.safety-note p { margin: 8px 0 0 14px; max-width: 580px; }
-button { min-height: 32px; padding: 5px 12px; border: 1px solid var(--control-border); border-radius: 5px; background: var(--button); color: var(--text); cursor: pointer; font-weight: 500; }
-button:hover { border-color: var(--muted); }
-button.primary { background: var(--accent); border-color: var(--accent); color: white; }
-button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
-button:disabled { opacity: .55; cursor: default; }
-button.small { min-height: 29px; font-size: 12px; padding: 3px 10px; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.settings-page button { min-height: 34px; padding: 6px 14px; }
-.settings-page button.small { min-height: 30px; padding: 4px 12px; font-size: 13px; }
-/* Settings save themselves: the footer says so, beside Restore defaults. */
-.form-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 16px; padding-top: 6px; }
-.form-footer #status { flex-basis: 100%; }
-#status, #tabStatus, #syncStatus, #parkingStatus, #sitesStatus { min-height: 18px; margin-top: 9px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
-.settings-page :is(#status, #tabStatus, #syncStatus, #parkingStatus, #sitesStatus) { font-size: 13px; }
-/* One line is kept for this message, so it appearing or clearing moves nothing. */
-.settings-page #status { min-height: 1lh; }
-#status.error, #tabStatus.error, #syncStatus.error, #parkingStatus.error, #sitesStatus.error, .error { color: var(--error); }
-#loadError { margin: 12px 0; }
-.individual-section { margin-top: 18px; }
-.individual-section > summary { font-weight: 500; }
-.individual-intro { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 10px 0 12px 14px; }
-.individual-intro .hint { flex: 1 1 320px; }
-/* A long tab list scrolls inside its own panel instead of lengthening the page. */
-.tab-scroll { position: relative; margin-left: 14px; }
-/* Keyboard focus scrolls a row clear of the edge fades. */
-.tab-list { max-height: min(340px, 50vh); overflow-y: auto; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--control); scroll-padding-block: 24px 56px; }
-/* macOS hides scrollbars until you scroll, so show that the list continues:
-   edge fades and a chevron appear only while there is more to scroll to. */
-.tab-scroll::before, .tab-scroll::after { content: ''; position: absolute; left: 1px; right: calc(1px + var(--scrollbar, 0px)); z-index: 1; pointer-events: none; opacity: 0; transition: opacity .15s; }
-.tab-scroll::before { top: 1px; height: 24px; border-radius: 7px 7px 0 0; background: linear-gradient(var(--control), transparent); }
-.tab-scroll::after { bottom: 1px; height: 56px; border-radius: 0 0 7px 7px; background: linear-gradient(transparent, var(--control) 72%); }
-.tab-scroll.more-above::before, .tab-scroll.more-below::after { opacity: 1; }
-button.scroll-cue { position: absolute; z-index: 2; left: 50%; bottom: 9px; transform: translateX(-50%); display: grid; place-items: center; width: 28px; height: 28px; min-height: 0; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--control); color: var(--muted); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
-button.scroll-cue:hover { color: var(--text); border-color: var(--control-border); }
-.scroll-cue svg { width: 16px; height: 16px; }
-@media (prefers-reduced-motion: reduce) { .tab-scroll::before, .tab-scroll::after { transition: none; } }
-.tab-list:empty { display: none; }
-.tab-list:not(:has(.tab-row)) { padding: 10px 14px; color: var(--muted); }
-.tab-row { padding: 10px 0; margin: 0; border-bottom: 1px solid var(--line); }
-.tab-row:last-child { border-bottom: 0; }
-.tab-text { min-width: 0; }
-.tab-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
-.tab-row .hint { font-size: 12px; margin-top: 1px; }
-.individual-section #tabStatus { margin-left: 14px; }
-.individual-section #tabStatus:empty { min-height: 0; margin-top: 0; }
-/* Sync: "Sync all settings", then each group, with its settings indented beneath. */
-.sync-list { margin-top: 14px; }
-.sync-list .check-row { margin: 0; padding: 5px 0; }
-.sync-all > span, .sync-group-row > span { font-weight: 500; }
-.sync-tree { margin: 2px 0 0 7.5px; padding-left: 17.5px; border-left: 1px solid var(--line); }
-.sync-children { padding-left: 26px; }
-input[type=radio] { flex: none; width: 16px; height: 16px; margin: 3px 0 0; accent-color: var(--accent); }
-.sync-choice { margin: 14px 0 2px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--control); }
-.sync-conflict { margin: 10px 0 12px; }
-.sync-conflict legend { padding: 0; font-weight: 500; }
-.sync-conflict .hint { margin-top: 2px; }
-.sync-conflict .check-row { margin: 6px 0; }
-.sync-choice .text-button { padding: 0 6px; min-height: 34px; font-size: 13px; }
-#syncStatus:empty, #parkingStatus:empty, #sitesStatus:empty { min-height: 0; margin-top: 0; }
-.page-footer { margin-top: 24px; color: var(--muted); font-size: 12px; }
-.parking-body { min-height: 100vh; display: grid; place-items: center; padding: 32px 24px; }
-.parked { width: min(100%, 440px); text-align: center; margin-top: -6vh; }
-.parked-state { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 16px; }
-.parked h1.previous-title { font-size: 24px; line-height: 1.3; letter-spacing: -.35px; margin: 0 0 24px; text-wrap: balance; overflow-wrap: anywhere;
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-/* A hairline in the opposite tone keeps white icons visible on light pages and black ones on dark. */
-.favicon { width: 20px; height: 20px; vertical-align: -1px; margin-right: 10px; filter: drop-shadow(0 0 .6px var(--icon-edge)); }
-.parked .hint, .parked #status { font-size: 13px; text-wrap: balance; }
-.parked #detail { margin-top: 18px; }
-.quiet-note { margin-top: 5px; }
-/* An intrinsic width avoids depending on Chrome's initial popup viewport. */
-html.popup-root { width: 360px; min-width: 360px; }
-.popup { width: 360px; padding: 14px; }
-.popup h1 { font-size: 16px; letter-spacing: -.2px; white-space: nowrap; }
-.popup .app-header { gap: 9px; }
-.popup .stats { margin: 12px 0 6px; }
-.popup .stats > div { display: flex; justify-content: space-between; gap: 12px; margin: 4px 0; }
-.popup .stats dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
-.popup .stats-help { font-size: 11px; white-space: nowrap; }
-.popup-actions { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 10px; margin-top: 10px; }
-.popup-actions button { height: 36px; padding: 6px 12px; font-size: 12px; white-space: nowrap; }
-.popup-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; white-space: nowrap; }
-.popup-footer .hint { font-size: 11px; }
-button.text-button { padding: 2px 0 2px 8px; border: 0; min-height: 28px; background: none; color: var(--accent); font-size: 12px; }
-.popup #status:empty { display: none; }
-@media (max-width: 480px) {
-  .settings-page { margin-top: 22px; padding: 0 20px; }
-  .preference-row { grid-template-columns: 1fr 180px; gap: 12px; }
-  .individual-intro, .tab-scroll, .individual-section #tabStatus { margin-left: 0; }
-  .unit-control { gap: 7px; }
-  .unit-control input { width: 73px; }
+
+/* Night concrete */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #25282B;
+  --field: #1E2124;
+  --button: #2F3337;
+  --button-hover: #363B40;
+  --button-down: #2A2D31;
+  --line: #3A3F44;
+  --edge: #7D848A;
+  --edge-hover: #9CA3A9;
+  --ink: #E4E4E1;
+  --muted: #A5AAAF;
+  --amber: #F2A541;
+  --press: #0E70DA;       /* fill under white text */
+  --press-hover: #1473DE;
+  --press-down: #036BD5;
+  --link: #4998FE;        /* links, focus and checked controls on dark concrete */
+  --on-press: #FFFFFF;
+  --focus: #4998FE;
+  --danger: #F29D94;
+  --danger-edge: #B9645C;
+  --danger-wash: #3A2D2D;
+  --wash: rgb(255 255 255 / .07);
+  --favicon-edge: rgb(255 255 255 / .38);
+  accent-color: var(--link);
 }
-@media (max-width: 340px) { .preference-row { grid-template-columns: 1fr; gap: 6px; } }
-:root[data-theme="dark"] { color-scheme: dark; --background: #202124; --text: #e7e8eb; --muted: #a6aab2; --line: #383b40; --control: #282a2f; --control-border: #545860; --field-border: #72777f; --button: #303238; --accent: #8bb3ff; --accent-hover: #a8c6ff; --error: #ffaaa1; --icon-edge: rgb(255 255 255 / .38); }
-:root[data-theme="dark"] button.primary { color: #16233b; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) { background: #25282B; color-scheme: dark; }
+}
 :root[data-theme-pending] body { visibility: hidden; }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) { background: #202124; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+/* Chrome's own stylesheet for extension pages shrinks body text; inherit instead. */
+body { margin: 0; font: inherit; }
+h1, h2, p, dl, dd { margin: 0; }
+h1, h2 { font-weight: 600; }
+input, select, textarea, button { font: inherit; color: inherit; }
+fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+img { display: block; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.hint { color: var(--muted); }
+code { font: inherit; color: var(--ink); white-space: nowrap; }
+
+/* ---- Controls: native, lightly themed ---------------------------------- */
+
+button {
+  min-height: 26px;
+  padding: 2px 11px;
+  border: 1px solid var(--edge);
+  border-radius: 5px;
+  background: var(--button);
+  color: var(--ink);
+  line-height: 18px;
+  cursor: pointer;
+  transition: background-color .1s, border-color .1s;
+}
+button:hover { background: var(--button-hover); border-color: var(--edge-hover); }
+button:active { background: var(--button-down); }
+button:disabled { opacity: .5; cursor: default; background: var(--button); border-color: var(--edge); }
+
+/* The default button: the one Enter would choose. Only ever one on screen. */
+button.default { background: var(--press); border-color: var(--press); color: var(--on-press); font-weight: 600; }
+button.default:hover { background: var(--press-hover); border-color: var(--press-hover); }
+button.default:active { background: var(--press-down); }
+button.default:disabled { background: var(--press); border-color: var(--press); }
+
+/* Clearing actions: outlined in light red, never filled. */
+button.danger { background: transparent; border-color: var(--danger-edge); color: var(--danger); }
+button.danger:hover { background: var(--danger-wash); border-color: var(--danger); }
+button.danger:disabled { background: transparent; border-color: var(--danger-edge); }
+
+button.link { min-height: 0; padding: 0; border: 0; border-radius: 2px; background: none; color: var(--link); }
+button.link:hover { background: none; text-decoration: underline; text-underline-offset: 2px; }
+
+button.icon-button { display: inline-grid; place-items: center; width: 28px; height: 28px; min-height: 0; padding: 0; border: 0; border-radius: 4px; background: none; color: var(--muted); }
+button.icon-button:hover { background: var(--wash); color: var(--ink); }
+.icon-button svg { width: 17px; height: 17px; }
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button.icon-button:focus-visible { outline-offset: 0; }
+
+select, input[type=number], textarea {
+  border: 1px solid var(--edge);
+  background: var(--field);
+  color: var(--ink);
+}
+select:hover, input[type=number]:hover, textarea:hover { border-color: var(--edge-hover); }
+/* Menus are pressed like buttons, so they share the button radius; boxes you type into are nearly square. */
+select { height: 26px; padding: 0 4px 0 7px; border-radius: 5px; cursor: pointer; }
+input[type=number] { width: 4.6em; height: 26px; padding: 0 2px 0 7px; border-radius: 2px; font-variant-numeric: tabular-nums; }
+textarea { display: block; border-radius: 2px; resize: vertical; }
+/* A site list that can't be used is kept as typed, and marked until it's fixed. */
+textarea[aria-invalid="true"] { border-color: var(--danger); }
+select:focus-visible, input[type=number]:focus-visible, textarea:focus-visible { outline-offset: 1px; }
+
+input[type=checkbox], input[type=radio] { flex: none; width: 14px; height: 14px; margin: 0; cursor: pointer; }
+input:disabled { cursor: default; }
+
+.check-row { display: flex; align-items: flex-start; gap: 7px; cursor: pointer; }
+.check-row > input { margin-top: 2px; }
+.check-row > span { min-width: 0; }
+
+/* Status lines keep no space until they have something to say. */
+[role=status]:empty { display: none; }
+.error { color: var(--danger); }
+
+/* ---- Popup ------------------------------------------------------------- */
+
+/* An intrinsic width avoids depending on Chrome's initial popup viewport. */
+html.popup-root { width: 340px; min-width: 340px; }
+.popup { width: 340px; font-size: 13px; line-height: 18px; }
+.popup main > *, .popup .app-header, .popup-footer { padding-inline: 14px; }
+
+.popup .app-header { display: flex; align-items: center; gap: 7px; padding-block: 9px; }
+.popup .app-header img { width: 16px; height: 16px; }
+.popup h1 { font-size: 13px; line-height: 18px; white-space: nowrap; }
+
+/* This tab: what Protect applies to, then the button. */
+.this-tab { padding-block: 10px 12px; border-top: 1px solid var(--line); }
+.tab-line { display: flex; align-items: center; gap: 7px; min-width: 0; min-height: 18px; margin-bottom: 8px; }
+.tab-line img { flex: none; width: 16px; height: 16px; border-radius: 3px; }
+#tabTitle { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.this-tab.unavailable #tabTitle { color: var(--muted); }
+#protect { width: 100%; min-height: 30px; }
+.popup .note { margin-top: 6px; font-size: 12px; line-height: 16px; color: var(--muted); }
+
+/* Counts: label and number on one line, numbers strong and in columns. */
+.stats { padding-block: 9px 0; border-top: 1px solid var(--line); }
+.stats > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; line-height: 20px; }
+.stats dd { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
+/* Amber means something is parked or asleep; a zero is plain. */
+.stats dd.some { color: var(--amber); }
+.popup .stats-help { margin-top: 1px; padding-bottom: 10px; }
+/* A changed number drops into place instead of jumping. popup.js swaps in a new span
+   marked .changed; the first fill when the popup opens doesn't move. */
+.stats dd > span { display: inline-block; }
+.stats dd > .changed { animation: count-in .18s ease-out; }
+@keyframes count-in { from { opacity: 0; transform: translateY(-4px); } }
+
+.mode-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-block: 9px; border-top: 1px solid var(--line); }
+#mode { color: var(--muted); white-space: nowrap; }
+#toggle { white-space: nowrap; }
+/* Paused: the mode says so in plain ink and Resume becomes the default button. */
+.popup.paused #mode { color: var(--ink); font-weight: 600; }
+.popup.paused #mode::before { content: ''; display: inline-block; width: 3px; height: 9px; margin-right: 7px; border-inline: 2.5px solid currentColor; vertical-align: -1px; }
+
+/* One expander for the clearing actions: the label, and a chevron that points the way it will go. */
+.clearing { border-top: 1px solid var(--line); }
+.clearing > summary { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 14px; list-style: none; cursor: pointer; user-select: none; }
+.clearing > summary::-webkit-details-marker { display: none; }
+.clearing > summary::after { content: ''; width: 6px; height: 6px; margin-top: -3px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg); }
+.clearing[open] > summary::after { margin-top: 3px; transform: rotate(-135deg); }
+.clearing > summary:hover { background: var(--wash); }
+.clearing > summary:focus-visible { outline-offset: -2px; }
+.popup .clearing { padding-inline: 0; }
+.clearing-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 14px 12px; }
+
+/* The confirmation takes the place of the two buttons. */
+.confirm { padding: 2px 14px 12px; }
+.confirm-title { font-weight: 600; }
+#confirmText { margin-top: 3px; text-wrap: pretty; }
+.confirm .check-row { margin-top: 9px; }
+.confirm-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
+
+.popup #status { padding-block: 2px 10px; font-size: 12px; line-height: 16px; color: var(--muted); }
+.popup #status.error { color: var(--danger); }
+
+.popup-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-block: 4px; padding-inline-end: 7px; border-top: 1px solid var(--line); white-space: nowrap; }
+.popup-footer .link { padding-block: 4px; font-size: 12px; line-height: 16px; }
+.tools { display: flex; gap: 2px; }
+
+/* ---- Settings ---------------------------------------------------------- */
+
+.settings { font-size: 14px; line-height: 20px; }
+.settings .hint { font-size: 13px; line-height: 18px; text-wrap: pretty; }
+/* Left-aligned, as a tool's own page is; the column keeps lines under 80 characters. */
+.settings-page { max-width: 760px; padding: 34px 48px 40px; }
+
+.settings .app-header { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.settings .app-header img { width: 24px; height: 24px; }
+.settings h1 { font-size: 18px; line-height: 24px; }
+.settings .app-header p { align-self: last baseline; color: var(--muted); }
+.theme-switch { display: flex; align-items: center; gap: 4px 14px; margin-left: auto; font-size: 13px; }
+.theme-switch legend { float: left; margin-right: 2px; padding: 0; color: var(--muted); }
+.theme-switch label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+
+/* Quiet build stamp in the top-left corner, clear of the header and the scrollbar. */
+.version-tag { position: absolute; top: 7px; left: 10px; font-size: 11px; line-height: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+#loadError { margin-top: 12px; }
+
+.enable-row { margin: 18px 0; }
+.enable-row > span { font-weight: 600; }
+.enable-row .hint { display: block; margin-top: 1px; font-weight: 400; }
+
+.settings-section { padding: 17px 0 20px; border-top: 1px solid var(--line); }
+.settings h2 { margin-bottom: 11px; font-size: 16px; line-height: 22px; }
+.settings-section > .check-row, .settings-fields > .check-row { margin-bottom: 7px; }
+
+/* Parking: labels in one column, their controls lined up in the next. */
+.preference-row { display: grid; grid-template-columns: 12.5em minmax(0, 1fr); gap: 0 12px; align-items: start; margin-bottom: 10px; }
+.preference-row:last-of-type { margin-bottom: 0; }
+.preference-row > label { line-height: 26px; }
+.preference-row .hint { margin-top: 3px; max-width: 60ch; }
+.unit-control { display: flex; align-items: center; gap: 7px; }
+.unit-control > span { color: var(--muted); }
+
+.field { margin-top: 16px; }
+.field-label { display: block; font-weight: 600; }
+#exclusionHelp { max-width: 66ch; margin: 1px 0 8px; }
+#exclusions { width: min(100%, 520px); min-height: 92px; max-height: 320px; padding: 5px 8px; font: 13px/19px var(--mono); }
+.field-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin-top: 8px; }
+.settings button.small { min-height: 24px; padding: 1px 10px; font-size: 13px; }
+#sitesStatus, #parkingStatus, #tabStatus, #syncStatus, #supportStatus, .settings #status { margin-top: 8px; font-size: 13px; color: var(--muted); }
+#sitesStatus.error, #parkingStatus.error, #tabStatus.error, #syncStatus.error, #supportStatus.error, .settings #status.error { color: var(--danger); }
+
+/* Disclosures keep Chrome's own triangle. */
+.settings details { margin-top: 10px; }
+.settings details > summary { width: fit-content; cursor: pointer; }
+.settings details > summary::marker { color: var(--muted); font-size: 11px; }
+.settings details > :not(summary) { margin-left: 15px; }
+.more > summary { color: var(--ink); font-size: 13px; }
+.more > p { max-width: 64ch; margin-top: 4px; }
+
+.settings .individual-section { margin-top: 18px; }
+.individual-section > summary { font-weight: 600; }
+.individual-intro { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; max-width: 560px; margin: 6px 0 8px; }
+.individual-intro .hint { flex: 1 1 300px; }
+.tab-scroll { position: relative; max-width: 560px; }
+.tab-list { max-height: min(320px, 50vh); overflow-y: auto; border: 1px solid var(--edge); border-radius: 2px; background: var(--field); }
+.tab-list:empty { display: none; }
+.tab-list:not(:has(.tab-row)) { padding: 8px 10px; color: var(--muted); }
+.tab-row { align-items: flex-start; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+.tab-row:last-child { border-bottom: 0; }
+.tab-row:hover { background: var(--wash); }
+.tab-text { display: flex; justify-content: space-between; gap: 16px; width: 100%; }
+.tab-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+.tab-row .hint { flex: none; font-size: 12px; line-height: 20px; font-variant-numeric: tabular-nums; }
+/* More tabs than fit: a plain round chevron in the corner, no fades. It keeps
+   clear of a scrollbar that takes up space (options.js measures it). */
+button.scroll-cue { position: absolute; right: calc(8px + var(--scrollbar, 0px)); bottom: 8px; display: grid; place-items: center; width: 26px; height: 26px; min-height: 0; padding: 0; border-radius: 50%; }
+.scroll-cue svg { width: 14px; height: 14px; }
+
+#syncHelp { max-width: 66ch; }
+.sync-list { margin-top: 12px; }
+.sync-list .check-row { padding-block: 2px; }
+.sync-all > span { font-weight: 600; }
+.sync-tree { display: flex; flex-wrap: wrap; gap: 4px 44px; margin: 6px 0 0 21px; }
+.sync-group-row > span { font-weight: 600; }
+.sync-children { margin-left: 21px; }
+.sync-choice { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--edge); border-radius: 2px; background: var(--field); }
+.sync-choice .actions { display: flex; gap: 8px; margin-top: 10px; }
+.sync-conflict { margin: 8px 0; }
+.sync-conflict legend { padding: 0; font-weight: 600; }
+.sync-conflict .check-row { margin-top: 4px; }
+.local-note { max-width: 66ch; margin-top: 12px; }
+
+.form-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 14px 0 10px; border-top: 1px solid var(--line); }
+.form-footer > .hint { margin-right: 6px; }
+.form-footer > [role=status] { flex-basis: 100%; margin-top: 0; }
+/* Its line is kept, so a message appearing or clearing a few seconds later moves nothing. */
+.settings-page #status { display: block; min-height: 1lh; }
+
+.support-section > .hint { max-width: 66ch; }
+.support-links { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-top: 10px; }
+.settings .support-links .link { padding-block: 2px; line-height: 20px; }
+.page-footer { padding-top: 14px; border-top: 1px solid var(--line); font-size: 12px; line-height: 16px; color: var(--muted); }
+
+/* Below about 600 px wide (a narrow window, or 400% zoom): the theme choice goes
+   under the title, labels sit above their controls and the Sync groups wrap, so
+   nothing scrolls sideways. */
+@media (max-width: 600px) {
+  .settings-page { padding: 30px 20px 32px; }
+  .settings .app-header { flex-wrap: wrap; row-gap: 10px; }
+  .theme-switch { flex-basis: 100%; margin-left: 0; }
+  .preference-row { grid-template-columns: minmax(0, 1fr); }
+  .preference-row > label { line-height: 20px; margin-bottom: 4px; }
+  .sync-tree { row-gap: 8px; }
 }
 
-/* The popup's footer actions: Report a bug, Buy me a coffee and Settings, as
-   same-sized icon buttons. Their names are in aria-label and title. */
-.popup-links { display: flex; align-items: center; gap: 4px; margin-right: -6px; }
-button.icon-button { display: inline-grid; place-items: center; width: 30px; height: 30px; min-height: 30px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--muted); }
-button.icon-button:hover { color: var(--text); background: var(--button); }
-button.icon-button:focus-visible { outline-offset: 0; }
-.icon-button svg { width: 18px; height: 18px; }
-.support-section { border-top: 1px solid var(--line); margin-top: 26px; padding-top: 24px; }
-.support-section h2 { margin-bottom: 8px; }
-.support-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 22px; margin-top: 6px; }
-.support-section .text-button { padding-left: 0; font-size: 13px; }
-.bug-link { display: inline-flex; align-items: center; gap: 6px; }
-.bug-link svg { flex: none; width: 16px; height: 16px; }
-/* Buy me a coffee in Settings: a small cup and a plain label. */
-.coffee-link { display: inline-flex; align-items: center; gap: 5px; }
-.coffee-link svg { flex: none; width: 16px; height: 16px; }
-#supportStatus:empty { display: none; }
-#supportStatus { margin-top: 8px; font-size: 12px; }
+/* ---- Parking page ------------------------------------------------------ */
 
-/* Compact three-state theme switch. Native radios keep keyboard and screen reader behavior. */
-.theme-switch { display: flex; gap: 2px; margin-left: auto; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: var(--control); }
-.theme-option { position: relative; display: grid; place-items: center; width: 34px; height: 28px; border-radius: 6px; color: var(--muted); cursor: pointer; }
-.theme-option input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: inherit; }
-.theme-option svg { width: 17px; height: 17px; pointer-events: none; }
-.theme-option:hover { color: var(--text); }
-.theme-option:has(input:checked) { background: var(--button); color: var(--accent); box-shadow: inset 0 0 0 1px var(--control-border); }
-.theme-option:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
-.theme-switch:disabled .theme-option { cursor: default; opacity: .55; }
-/* High Contrast drops backgrounds and shadows, so mark the chosen theme in system colours. */
-@media (forced-colors: active) { .theme-option:has(input:checked) { forced-color-adjust: none; background: Highlight; color: HighlightText; } }
+.parking-body { display: flex; flex-direction: column; min-height: 100vh; padding: max(56px, 15vh) 24px 24px; }
+/* A plain column in the upper part of the page, everything left-aligned. */
+.parked { width: min(100%, 640px); margin: 0 auto 64px; }
+.previous-title { display: flex; align-items: flex-start; gap: 14px; font-size: 30px; line-height: 36px; }
+.previous-title .favicon { flex: none; width: 32px; height: 32px; margin-top: 2px; border-radius: 4px; filter: drop-shadow(0 0 .6px var(--favicon-edge)); }
+/* Until the icon loads (or when there is none) its place is kept, so the title
+   never moves and stays above the host. */
+.previous-title .favicon[hidden] { display: block !important; visibility: hidden; }
+#previous { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; text-wrap: balance; }
+#previousHost { margin: 4px 0 0 46px; font-size: 14px; line-height: 20px; color: var(--muted); overflow-wrap: anywhere; }
+.parked-state { margin-top: 36px; font-size: 15px; line-height: 22px; font-weight: 600; color: var(--amber); }
+#detail { max-width: 34em; margin-top: 2px; font-size: 15px; line-height: 22px; color: var(--muted); text-wrap: pretty; }
+#detail > span { display: block; }
+.parked-actions { margin-top: 22px; }
+#restore { min-height: 32px; padding: 4px 16px; font-size: 14px; }
+.parked #status { margin-top: 12px; font-size: 14px; color: var(--muted); }
+.parked #status.error { color: var(--danger); }
+/* Signed in the window's bottom-left corner; in a short window it follows the content instead. */
+.parked-brand { display: flex; align-self: flex-start; align-items: center; gap: 7px; margin-top: auto; font-size: 12px; color: var(--muted); }
+.parked-brand img { width: 16px; height: 16px; }
+
+/* ---- High Contrast and reduced motion ---------------------------------- */
+
+@media (forced-colors: active) {
+  :focus-visible { outline-color: Highlight; }
+  button.link { color: LinkText; }
+  /* Clearing actions keep a heavier edge so they still stand apart. */
+  button.danger { border-width: 2px; }
+  .clearing > summary::after { border-color: ButtonText; }
+  .popup.paused #mode::before { border-color: CanvasText; }
+  img.favicon, .tab-line img { filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after { transition: none !important; animation: none !important; }
+}

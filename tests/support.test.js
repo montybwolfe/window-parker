@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {bindIssues, bindSupport, ISSUES_URL, SUPPORT_URL} from '../support.js';
+import {bindIssues, bindLink, bindSupport, CHANGELOG_URL, ISSUES_URL, SUPPORT_URL} from '../support.js';
 const read=file=>readFileSync(new URL('../'+file,import.meta.url),'utf8');
 function setup(t,create=async()=>({id:1}),bind=bindSupport){
  let click,now=1000;const calls=[],errors=[];
@@ -40,46 +40,54 @@ test('both surfaces bind native accessible secondary buttons; parked page and wo
   const html=read(name+'.html');assert.match(html,/<button[^>]*id="support"[^>]*type="button"[^>]*aria-label="[^"]*opens in a new tab/);
   assert.match(read(name+'.js'),/bindSupport\(document.getElementById\('support'\)/);assert(!html.includes(SUPPORT_URL));
  }
- assert.match(read('popup.html'),/class="popup-links"/);
- for(const name of ['popup','options']) { assert.match(read(name+'.html'),/<h1>Chrome Window Parker<\/h1>/); assert(!/(?<!Chrome )Window Parker/.test(read(name+'.html'))); }assert(read('options.html').indexOf('support-section')>read('options.html').indexOf('individual-section'));
+ assert.match(read('popup.html'),/<div class="tools">/);
+ for(const name of ['popup','options']) { assert.match(read(name+'.html'),/<h1>Window Parker<\/h1>/); assert(!/Chrome Window Parker/.test(read(name+'.html'))); }assert(read('options.html').indexOf('support-section')>read('options.html').indexOf('individual-section'));
  for(const file of ['parked.html','parked.js','background.js','engine.js'])assert(!read(file).includes('support.js')&&!read(file).includes('buymeacoffee'));
- assert.match(read('ui.css'),/:focus-visible/);assert.match(read('ui.css'),/\.popup-links \{ display: flex/);
+ assert.match(read('ui.css'),/:focus-visible/);assert.match(read('ui.css'),/\.tools \{ display: flex/);
 });
 for(const [input,detail] of [['mouse',1],['keyboard',0]])test(`deliberate ${input} bug report opens exactly the GitHub Issues page, with nothing attached`,async t=>{
  const h=setup(t,undefined,bindIssues);await h.click({detail,url:'https://attacker.invalid'});
- assert.equal(ISSUES_URL,'https://github.com/montybwolfe/chrome-window-parker/issues');
+ assert.equal(ISSUES_URL,'https://github.com/montybwolfe/window-parker/issues');
  assert.deepEqual(h.calls,[{url:ISSUES_URL,active:true}]);assert.deepEqual(h.errors,[]);
  await h.click({isTrusted:false});h.advance(50);await h.click();assert.equal(h.calls.length,1,'no scripted or rapid repeats');
  for(const name of ['popup','options']){
   assert.match(read(name+'.js'),/bindIssues\(\$\('reportBug'\)/);assert(!read(name+'.html').includes(ISSUES_URL));
  }
 });
-test('popup: Parking on, then Report a bug, Buy me a coffee and Settings as same-sized icon buttons; Settings keeps full labels',()=>{
+for(const [input,detail] of [['mouse',1],['keyboard',0]])test(`deliberate ${input} Changelog action opens exactly the GitHub Releases list, with nothing attached`,async t=>{
+ const h=setup(t,undefined,(button,onError)=>bindLink(button,CHANGELOG_URL,onError));await h.click({detail,url:'https://attacker.invalid'});
+ assert.equal(CHANGELOG_URL,'https://github.com/montybwolfe/window-parker/releases','the list, so “What’s new” can’t land on a missing page');
+ assert.deepEqual(h.calls,[{url:CHANGELOG_URL,active:true}]);assert.deepEqual(h.errors,[]);
+ await h.click({isTrusted:false});h.advance(50);await h.click();assert.equal(h.calls.length,1,'no scripted or rapid repeats');
+ for(const name of ['popup','options'])assert(!read(name+'.html').includes(CHANGELOG_URL));
+});
+test('popup footer: the Changelog link, then Report a bug, Buy me a coffee and Settings as same-sized icon buttons; Settings has three quiet links',()=>{
  const popup=read('popup.html'),options=read('options.html');
- const footer=popup.match(/<div class="popup-links">(.*?)<\/div><\/div>/)[1];
- const buttons=[...footer.matchAll(/<button class="icon-button" id="(\w+)" type="button" aria-label="([^"]+)" title="([^"]+)"><svg viewBox="0 0 24 24" aria-hidden="true"[^>]*>.*?<\/svg><\/button>/g)].map(m=>m.slice(1));
+ const footer=popup.match(/<footer class="popup-footer">(.*?)<\/footer>/)[1];
+ assert.match(footer,/^<button class="link" id="changelog" type="button" aria-label="Changelog \(opens in a new tab\)" title="Release notes on GitHub">Changelog<\/button><div class="tools">/,'Changelog on the left');
+ const tools=footer.match(/<div class="tools">(.*)<\/div>$/)[1];
+ const buttons=[...tools.matchAll(/<button class="icon-button" id="(\w+)" type="button" aria-label="([^"]+)" title="([^"]+)"><svg viewBox="0 0 24 24" aria-hidden="true"[^>]*>.*?<\/svg><\/button>/g)].map(m=>m.slice(1));
  assert.deepEqual(buttons,[['reportBug','Report a bug on GitHub (opens in a new tab)','Report a bug'],
    ['support','Buy me a coffee (opens in a new tab)','Buy me a coffee'],['options','Settings','Settings']],'bug, coffee, then Settings');
- assert.equal(footer.replace(/<svg.*?<\/svg>/g,'').replace(/<[^>]+>/g,''),'','no visible text beside the icons');
- assert(!/Settings…|Settings\.\.\./.test(popup),'no ellipsis');assert.match(popup,/<span id="mode" class="hint">/);
- // Settings has room for the full, labelled versions, and no Settings button of its own.
- const coffee=options.match(/<button class="text-button coffee-link" id="support"[^>]*>.*?<\/button>/)?.[0];
- assert.match(coffee,/aria-label="Buy me a coffee \(opens in a new tab\)"/,'the accessible name starts with the visible label');
- assert.match(coffee,/<svg viewBox="0 0 24 24" aria-hidden="true"[^>]*>.*<\/svg><span>Buy me a coffee<\/span><\/button>$/,'an inline cup: no image request');
- assert.match(options,/<button class="text-button bug-link" id="reportBug"[^>]*>.*?<span>Report a bug<\/span><\/button>/);
+ assert.equal(tools.replace(/<svg.*?<\/svg>/g,'').replace(/<[^>]+>/g,''),'','no visible text beside the icons');
+ assert(!/Settings…|Settings\.\.\./.test(popup),'no ellipsis');assert.match(popup,/<div class="mode-row"><p id="mode">Checking status…<\/p>/);
+ // Settings has room for words: three links in Support, each name starting with its visible label, and no Settings button.
+ assert.match(options,/<p class="support-links"><button class="link" id="reportBug" type="button" aria-label="Report a bug on GitHub \(opens in a new tab\)">Report a bug<\/button><button class="link" id="support" type="button" aria-label="Buy me a coffee \(opens in a new tab\)">Buy me a coffee<\/button><button class="link" id="changelog" type="button" aria-label="Changelog \(opens in a new tab\)">Changelog<\/button><\/p>/);
  assert(!/id="options"/.test(options));
  for(const html of [popup,options])assert(!/<button[^>]*>Support( development)?<\/button>/.test(html),'no vague "Support" control');
  const css=read('ui.css');
- assert.match(css,/button\.icon-button \{[^}]*width: 30px; height: 30px; min-height: 30px/,'the same hit area for each');
- assert.match(css,/button\.icon-button:hover \{[^}]*color: var\(--text\)/);assert.match(css,/button\.icon-button:focus-visible \{ outline-offset: 0; \}/);
+ assert.match(css,/button\.icon-button \{[^}]*width: 28px; height: 28px;/,'the same hit area for each');
+ assert.match(css,/button\.icon-button:hover \{[^}]*color: var\(--ink\)/);assert.match(css,/button\.icon-button:focus-visible \{ outline-offset: 0; \}/);
+ assert.match(css,/\.tools \{ display: flex; gap: 2px; \}/,'2 px apart');
  assert.match(css,/\.popup-footer \{[^}]*white-space: nowrap/,'one line');
- assert.match(css,/html\.popup-root \{ width: 360px; min-width: 360px; \}/,'the fixed width the footer is laid out for');
+ assert.match(css,/html\.popup-root \{ width: 340px; min-width: 340px; \}/,'the fixed width the footer is laid out for');
+ assert.match(css,/\.popup-footer \.link \{[^}]*font-size: 12px; line-height: 16px; \}/,'a small text link');
  // The README's graphical button goes to the same page as the extension's link.
  assert(read('README.md').includes(`<p align="center"><a href="${SUPPORT_URL}"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me a Coffee" width="206"></a></p>`));
 });
 test('permission list and restrictive CSP remain unchanged; no external resources or payment integration',()=>{
- const m=JSON.parse(read('manifest.json'));assert.deepEqual(m.permissions,['tabs','storage','alarms','downloads','favicon']);assert.equal(m.host_permissions,undefined);assert.equal(m.content_scripts,undefined);
+ const m=JSON.parse(read('manifest.json'));assert.deepEqual(m.permissions,['tabs','storage','alarms','downloads','favicon','contextMenus']);assert.equal(m.host_permissions,undefined);assert.equal(m.content_scripts,undefined);
  assert.equal(m.content_security_policy.extension_pages,"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'");
  for(const f of ['popup.html','options.html','parked.html'])assert(!/<(?:script|img|iframe)[^>]+(?:src|href)="https?:/.test(read(f)));
- assert.equal(m.version,'1.5.6.1');assert(!/stripe|payment|entitlement/i.test(read('support.js')));
+ assert.equal(m.version,'2.0');assert(!/stripe|payment|entitlement/i.test(read('support.js')));
 });

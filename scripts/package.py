@@ -12,7 +12,7 @@ assert manifest['manifest_version'] == 3
 assert re.fullmatch(r'(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)){0,3}', manifest['version'])
 assert all(int(part) <= 65535 for part in manifest['version'].split('.'))
 assert any(int(part) for part in manifest['version'].split('.'))
-assert manifest['permissions'] == ['tabs', 'storage', 'alarms', 'downloads', 'favicon']
+assert manifest['permissions'] == ['tabs', 'storage', 'alarms', 'downloads', 'favicon', 'contextMenus']
 assert not manifest.get('host_permissions') and not manifest.get('content_scripts')
 assert len(manifest['description']) <= 132
 files = [
@@ -20,8 +20,8 @@ files = [
     'manifest.json', 'background.js', 'clock.js', 'engine.js', 'settings.js',
     'ui.js', 'theme.js', 'ui.css', 'parked.html', 'parked.js', 'options.html', 'options.js',
     'popup.html', 'popup.js', 'support.js',
-    'icons/parker-timer-16.png', 'icons/parker-timer-24.png', 'icons/parker-timer-32.png', 'icons/parker-timer-48.png',
-    'icons/parker-timer-128.png',
+    'icons/window-parker-16.png', 'icons/window-parker-32.png', 'icons/window-parker-48.png', 'icons/window-parker-128.png',
+    'icons/window-parker.svg',
 ]
 references = [manifest['background']['service_worker'], manifest['options_ui']['page'],
               manifest['action']['default_popup'], *manifest['icons'].values(),
@@ -49,7 +49,7 @@ assert (root / 'LICENSE').read_text().startswith('MIT License')
 assert manifest['version'] == json.loads((root / 'package.json').read_text())['version']
 output = root / 'dist'
 output.mkdir(exist_ok=True)
-archive = output / f"chrome-window-parker-v{manifest['version']}.zip"
+archive = output / f"window-parker-v{manifest['version']}.zip"
 with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as bundle:
     for name in sorted(files):
         info = zipfile.ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0))

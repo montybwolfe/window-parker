@@ -31,7 +31,14 @@ onmessage=async({data})=>{
    }
    await import('../../background.js');postMessage({kind:'ready'});return;
   }
-  if(data.type==='storage-get'){postMessage({kind:'reply',id:data.id,response:{ok:true,data:{settings:h.local.settings}}});return;}
+  if(data.type==='storage-get'){const keys=data.message.keys===undefined?['settings']:[].concat(data.message.keys);
+   postMessage({kind:'reply',id:data.id,response:{ok:true,data:{values:Object.fromEntries(keys.filter(k=>k in h.local).map(k=>[k,copy(h.local[k])]))}}});return;}
+  if(data.type==='storage-set'||data.type==='storage-remove'){
+   const values=data.type==='storage-set'?data.message.values:Object.fromEntries([].concat(data.message.keys).map(k=>[k,undefined]));
+   const changes=Object.fromEntries(Object.entries(values).map(([k,v])=>[k,{oldValue:copy(h.local[k]),...(v===undefined?{}:{newValue:copy(v)})}]));
+   for(const [k,v] of Object.entries(values))if(v===undefined)delete h.local[k];else h.local[k]=copy(v);
+   postMessage({kind:'persist',value:data.type==='storage-set'?copy(values):{},removed:data.type==='storage-remove'?Object.keys(values):[]});
+   postMessage({kind:'reply',id:data.id,response:{ok:true,data:{changes}}});return;}
   if(data.type==='repro'){
    const legacy={setTimeout,clearTimeout};const results=[];
    for(const method of ['setTimeout','clearTimeout']){

@@ -10,7 +10,7 @@ export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // A disposable profile: nothing touches your own Chrome profile.
 export async function launch({extraArgs = []} = {}) {
-  const profile = mkdtempSync(join(tmpdir(), 'cwp-assets-'));
+  const profile = mkdtempSync(join(tmpdir(), 'wp-assets-'));
   const proc = spawn(CHROME, [`--user-data-dir=${profile}`, '--headless=new', '--remote-debugging-pipe',
     '--enable-unsafe-extension-debugging', '--no-first-run', '--no-default-browser-check', '--disable-sync',
     '--disable-background-networking', '--disable-component-update', '--disable-default-apps',

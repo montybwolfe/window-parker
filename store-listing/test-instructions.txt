@@ -1,6 +1,7 @@
 No login needed.
-1. Toolbar icon > gear (Settings): set "Park windows after" to Custom, 1 minute, then press Enter.
-2. Open a second window with some pages; return to the first.
-3. Within 2 minutes it shows "Window parked". Focus it for 2 seconds (or click Restore tab): the tab returns.
-Pinned, audible or excluded tabs keep a window awake.
-Settings > Sync is off by default. Tick a setting, a group or all. Settings changed here ask before taking synced values. Nothing goes to the developer.
+1. Toolbar icon > Settings (gear): "Park windows after" > Custom, 1 minute, press Enter.
+2. Open a second window with a web page; return to the first.
+3. Within 2 minutes the second window shows a parking page. Focus it for 2 seconds (or click Restore tab): the tab returns.
+Pinned, audible, protected or excluded tabs keep a window awake.
+Right-click a page: Protect this tab, Exclude this site, Pause automatic parking.
+Sync is off by default. Nothing goes to the developer.

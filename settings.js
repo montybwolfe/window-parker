@@ -73,12 +73,15 @@ export function compareRules(a, b) {
 // in A–Z order. A home address such as https://example.com/ repeats a listed
 // example.com, which already covers it. Any other full address repeats only
 // when identical: capitals, paths, ports and * count there, and www. or
-// another subdomain is always a different site.
+// another subdomain is always a different site. An entry Settings can't use
+// never repeats one it can (the Kelvin sign K lower-cases to k, say), so a
+// list that can't be saved keeps every problem for you to see and fix.
 export function cleanUpRules(rules) {
-  const site = rule => rule.includes('://') ? '' : rule.toLowerCase().replace(/^\*\./, '');
+  const usable = rule => { try { validateSettings({exclusions: [rule]}); return true; } catch { return false; } };
+  const site = rule => rule.includes('://') ? '' : (usable(rule) ? '' : '!') + rule.toLowerCase().replace(/^\*\./, '');
   const sites = new Set(rules.map(site).filter(Boolean)), kept = new Map();
   for (const rule of rules.toSorted(compareRules)) {
-    if (rule.includes('://') && sites.has(simplifyRule(rule))) continue;
+    if (rule.includes('://') && usable(rule) && sites.has(simplifyRule(rule))) continue;
     const key = site(rule) || rule;
     if (!kept.has(key) || rule === key) kept.set(key, rule);
   }

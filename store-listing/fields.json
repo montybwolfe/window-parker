@@ -1,5 +1,5 @@
 {
-  "title_from_package": "Chrome Window Parker",
+  "title_from_package": "Window Parker",
   "summary_from_package": "Parks idle Chrome windows so their tabs can sleep, and brings your tab back when you return.",
   "description_file": "description.txt",
   "category": "Functionality & UI",
@@ -16,12 +16,12 @@
   "marquee_promo_tile": "marquee-promo-1400x560.png",
   "promo_video_url": "",
   "official_url": "None (no verified domain supplied)",
-  "homepage_url": "https://github.com/montybwolfe/chrome-window-parker",
-  "support_url": "https://github.com/montybwolfe/chrome-window-parker/issues",
-  "privacy_policy_url": "https://github.com/montybwolfe/chrome-window-parker/blob/main/PRIVACY.md",
+  "homepage_url": "https://github.com/montybwolfe/window-parker",
+  "support_url": "https://github.com/montybwolfe/window-parker/issues",
+  "privacy_policy_url": "https://github.com/montybwolfe/window-parker/blob/main/PRIVACY.md",
   "mature_content": false,
   "in_app_purchases": false,
-  "version": "1.5.6.1",
+  "version": "2.0",
   "remote_code": false,
   "store_url": "https://chromewebstore.google.com/detail/chrome-window-parker/agdejolopcplaedpollnlgpboldnfbfi",
   "item_id": "agdejolopcplaedpollnlgpboldnfbfi"

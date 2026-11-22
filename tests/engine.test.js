@@ -117,7 +117,7 @@ test('ignore incognito and popup windows',async()=>{
 });
 test('permission, network and destructive API audit',()=>{
   const root=new URL('../',import.meta.url);const manifest=JSON.parse(readFileSync(new URL('manifest.json',root)));
-  assert.equal(manifest.manifest_version,3);assert.deepEqual(manifest.permissions,['tabs','storage','alarms','downloads','favicon']);assert.equal(manifest.host_permissions,undefined);assert.equal(manifest.content_scripts,undefined);
+  assert.equal(manifest.manifest_version,3);assert.deepEqual(manifest.permissions,['tabs','storage','alarms','downloads','favicon','contextMenus']);assert.equal(manifest.host_permissions,undefined);assert.equal(manifest.content_scripts,undefined);
   const code=readdirSync(root).filter(f=>f.endsWith('.js')).map(f=>readFileSync(new URL(f,root),'utf8')).join('\n');
   assert(!/\bfetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon/.test(code));
   assert.equal((code.match(/this\.api\.tabs\.remove\(/g)||[]).length,3); // restoration, verified empty-shell and moved-page cleanup
@@ -168,5 +168,5 @@ test('only web pages are offered for protection: they are the only tabs that par
   assert.equal(status.currentTab,null,'the selected chrome:// page cannot be protected from the popup');
   assert.deepEqual(status.tabs.map(t=>t.id),[200,201,202],'the tab list shows web pages only');
   h.tab(100).url='https://example.com/0/0';
-  assert.deepEqual((await h.p.message({type:'status'},sender)).currentTab,{id:100,protected:false});
+  assert.deepEqual((await h.p.message({type:'status'},sender)).currentTab,{id:100,title:'Tab 0/0',url:'https://example.com/0/0',protected:false,protectable:true});
 });

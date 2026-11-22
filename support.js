@@ -1,6 +1,7 @@
 // Only popup/Settings import this module. No worker/startup hooks or networking.
 export const SUPPORT_URL = 'https://buymeacoffee.com/montybwolfe';
-export const ISSUES_URL = 'https://github.com/montybwolfe/chrome-window-parker/issues';
+export const ISSUES_URL = 'https://github.com/montybwolfe/window-parker/issues';
+export const CHANGELOG_URL = 'https://github.com/montybwolfe/window-parker/releases';
 // Opens one fixed page in a new tab, only after a deliberate click or key press.
 // Nothing about your tabs or browsing is added to the address.
 export function bindLink(button, url, onError) {

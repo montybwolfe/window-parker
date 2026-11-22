@@ -10,13 +10,13 @@ function enqueue(work) {
   });
   // Keep the queue usable after a failure, while preserving the originating stack.
   // Return `next` so message callers still receive failure instead of false success.
-  queue = next.catch(error => console.error('[Chrome Window Parker]', error));
+  queue = next.catch(error => console.error('[Window Parker]', error));
   return next;
 }
 // Register synchronously, before initialization or any await.
 chrome.windows.onFocusChanged.addListener(id => {
   const epoch = parker.signalFocus(id), at = Date.now();
-  enqueue(() => parker.focusChanged(id, at, epoch));
+  enqueue(async () => { await parker.focusChanged(id, at, epoch); await parker.refreshMenus(); });
 });
 chrome.windows.onRemoved.addListener(id => {
   parker.shellEpoch++; enqueue(() => parker.closed(id));
@@ -26,7 +26,7 @@ chrome.tabs.onActivated.addListener(({windowId, tabId}) => {
   parker.signalTab(windowId, tabId);
   enqueue(async () => {
     await parker.activated(windowId, tabId); await parker.cleanupEmptyParked(windowId);
-    await parker.cleanupStray(windowId);
+    await parker.cleanupStray(windowId); await parker.refreshMenus();
   });
 });
 chrome.tabs.onRemoved.addListener((id, info) => {
@@ -65,7 +65,7 @@ chrome.tabs.onReplaced.addListener((addedId, removedId) => {
   const source = parker.detachedTabs.get(removedId);
   if (source !== undefined) { parker.detachedTabs.delete(removedId); parker.detachedTabs.set(addedId, source); }
   parker.replaced(addedId, removedId);
-  parker.shellEpoch++; enqueue(async () => { await parker.save(); await parker.sweep(); });
+  parker.shellEpoch++; enqueue(async () => { await parker.save(); await parker.sweep(); await parker.refreshMenus(); });
 });
 chrome.tabs.onUpdated.addListener((id, change, tab) => {
   if (change.url || change.status) parker.shellEpoch++;
@@ -73,7 +73,7 @@ chrome.tabs.onUpdated.addListener((id, change, tab) => {
     enqueue(async () => { await parker.cleanupEmptyParked(tab.windowId); await parker.cleanupStray(tab.windowId); });
   if (!parker.token(tab) && (change.url || change.status === 'loading')) parker.signalTab(tab.windowId);
   if (change.url && tab.active && !parker.token(tab)) {
-    enqueue(() => parker.activated(tab.windowId, id));
+    enqueue(async () => { await parker.activated(tab.windowId, id); await parker.refreshMenus(); });
     return;
   }
   if (change.url || change.audible !== undefined || change.pinned !== undefined || change.autoDiscardable !== undefined)
@@ -99,10 +99,20 @@ chrome.storage.onChanged.addListener((changes, area) => {
   enqueue(() => parker.syncChanged(changes));
 });
 chrome.runtime.onStartup.addListener(() => enqueue(() => parker.schedule()));
-chrome.runtime.onInstalled.addListener(() => enqueue(() => parker.schedule()));
+// Note a Store update for the popup, and make the right-click menu afresh on install
+// and update (Chrome keeps it between worker starts).
+chrome.runtime.onInstalled.addListener(details => enqueue(async () => {
+  await parker.installed(details); await parker.createMenus(); await parker.schedule();
+}));
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  // Like the messages below: a change to protection, exclusions or pausing
+  // cancels any in-flight parking before its queued handler runs.
+  if (['protect', 'unprotect', 'exclude', 'stop-excluding', 'pause', 'resume'].includes(info.menuItemId)) parker.safetyEpoch++;
+  enqueue(() => parker.menuClicked(info, tab));
+});
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   // Cancel any in-flight parking before queued settings / protection changes.
-  if (sender.id === chrome.runtime.id && ['configure', 'reset', 'protect', 'close-parked', 'sync-enable'].includes(msg?.type))
+  if (sender.id === chrome.runtime.id && ['configure', 'reset', 'protect', 'clear-protected', 'close-parked', 'sync-enable'].includes(msg?.type))
     parker.safetyEpoch++;
   // A Clear request arriving during initialization/cleanup takes priority before
   // its queued handler runs. Release the guard even when initialization fails.

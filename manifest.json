@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Chrome Window Parker",
-  "version": "1.5.6.1",
+  "name": "Window Parker",
+  "version": "2.0",
   "minimum_chrome_version": "120",
   "description": "Parks idle Chrome windows so their tabs can sleep, and brings your tab back when you return.",
   "permissions": [
@@ -9,7 +9,8 @@
     "storage",
     "alarms",
     "downloads",
-    "favicon"
+    "favicon",
+    "contextMenus"
   ],
   "incognito": "not_allowed",
   "background": {
@@ -21,19 +22,18 @@
     "open_in_tab": true
   },
   "action": {
-    "default_title": "Chrome Window Parker",
+    "default_title": "Window Parker",
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "icons/parker-timer-16.png",
-      "24": "icons/parker-timer-24.png",
-      "32": "icons/parker-timer-32.png"
+      "16": "icons/window-parker-16.png",
+      "32": "icons/window-parker-32.png"
     }
   },
   "icons": {
-    "16": "icons/parker-timer-16.png",
-    "32": "icons/parker-timer-32.png",
-    "48": "icons/parker-timer-48.png",
-    "128": "icons/parker-timer-128.png"
+    "16": "icons/window-parker-16.png",
+    "32": "icons/window-parker-32.png",
+    "48": "icons/window-parker-48.png",
+    "128": "icons/window-parker-128.png"
   },
   "content_security_policy": {
     "extension_pages": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'"

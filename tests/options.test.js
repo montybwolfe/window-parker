@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {DEFAULTS, SYNCABLE, validateSettings} from '../settings.js';
 import {harness} from './helpers.js';
+import {SYNC_REFUSED} from '../engine.js';
 const read=file=>readFileSync(new URL('../'+file,import.meta.url),'utf8');
 const html=read('options.html'), css=read('ui.css');
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
@@ -44,33 +45,24 @@ test('sync: "Sync all settings", then Parking and Tab protection groups as on th
   assert.match(html,/<button class="small" id="reset" type="button">Restore defaults<\/button>/);assert(!html.includes('Reset settings'));
 });
 
-test('theme is a compact labelled three-state icon control; bug report is a small labelled control',()=>{
+test('theme: Light, Dark and Auto as Chrome’s own radios, named in words under a “Theme” legend in the header',()=>{
   assert(!html.includes('appearance-heading')&&!/<select[^>]+id="appearance"/.test(html));
-  const radios=[...html.matchAll(/<label class="theme-option" title="([^"]+)"><input type="radio" name="appearance" value="(\w+)" aria-label="([^"]+)"><svg[^>]*aria-hidden="true"/g)];
-  assert.deepEqual(radios.map(m=>m[2]),['light','dark','auto']);
-  assert.deepEqual(radios.map(m=>m[3]),['Light theme','Dark theme','Auto theme']);
-  assert(radios.every(m=>m[1].startsWith(m[3])),'tooltips name each state');
+  assert.match(html,/<fieldset class="theme-switch settings-fields" disabled><legend>Theme<\/legend>\n<label><input type="radio" name="appearance" value="light">Light<\/label>\n<label><input type="radio" name="appearance" value="dark">Dark<\/label>\n<label title="Follows your system’s light or dark setting"><input type="radio" name="appearance" value="auto">Auto<\/label>\n<\/fieldset><\/header>/);
   assert(html.indexOf('theme-switch')<html.indexOf('<form'),'placed in the header');
-  assert.match(css,/\.theme-option:has\(input:checked\)/);assert.match(css,/\.theme-option:has\(input:focus-visible\)/);
+  assert(!/theme-option|forced-color-adjust/.test(css),'native radios: High Contrast marks the choice itself');
   for(const page of ['options.html','popup.html'])
-    assert.match(read(page),/<button[^>]*id="reportBug"[^>]*type="button"[^>]*aria-label="Report a bug on GitHub \(opens in a new tab\)"[^>]*title="Report a bug[^"]*"><svg[^>]*aria-hidden="true"/);
+    assert.match(read(page),/<button[^>]*id="reportBug"[^>]*type="button"[^>]*aria-label="Report a bug on GitHub \(opens in a new tab\)"/);
   assert(!read('parked.html').includes('reportBug'));
   for(const page of ['options.html','popup.html','parked.html'])assert(!/\sstyle=/.test(read(page)),'CSP forbids inline styles');
 });
 
-test('section headings keep their names; each has a small decorative icon drawn in the page',()=>{
-  const headings=[...html.matchAll(/<h2 id="([\w-]+)">(<svg class="heading-icon"[^>]*>.*?<\/svg>)([^<]+)<\/h2>/g)].map(m=>[m[1],m[3],m[2]]);
-  assert.deepEqual(headings.map(h=>h[1]),['Parking','Tab protection','Sync','Diagnostics','Support']);
+test('section headings keep their names, in page order, as plain text without decorative icons',()=>{
+  const headings=[...html.matchAll(/<h2 id="([\w-]+)">([^<]+)<\/h2>/g)].map(m=>m[2]);
+  assert.deepEqual(headings,['Parking','Tab protection','Sync','Diagnostics','Support']);
   assert.equal((html.match(/<h2\b/g)||[]).length,headings.length,'every section heading');
-  for(const [id,,svg] of headings){
-    assert.match(svg,/^<svg class="heading-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor"/,id);
-    assert(!/href|src=|url\(|<text|<image/.test(svg),`${id}: no external or text content`);
-  }
-  // Headings are flex rows, so the icon never adds height; the quiet Diagnostics heading keeps a quiet icon.
-  assert.match(css,/\.settings-page h2 \{ display: flex; align-items: center; gap: 8px; \}/);
-  assert.match(css,/\.heading-icon \{ flex: none; color: var\(--accent\); \}/);
-  assert.match(css,/\.settings-section\.compact \.heading-icon \{ width: 14px; height: 14px; color: inherit; \}/);
-  assert.match(css,/:root\[data-theme="dark"\] \{[^}]*--accent: #8bb3ff/,'a lighter accent in dark mode');
+  assert.deepEqual([...html.matchAll(/<svg\b/g)].length,1,'the only drawing is the tab list’s chevron');
+  assert(!/heading-icon/.test(html+css));
+  assert.match(css,/\.settings h2 \{ margin-bottom: 11px; font-size: 16px; line-height: 22px; \}/);
 });
 
 test('a long individual-tab list scrolls inside its own bounded panel; body text is not shrunk',()=>{
@@ -81,22 +73,17 @@ test('a long individual-tab list scrolls inside its own bounded panel; body text
   assert.match(css,/body \{ margin: 0; font: inherit; \}/,"override Chrome's 75% extension-page body size");
 });
 
-test('the tab list shows that it scrolls: edge fades and a chevron, without adding a tab stop or covering clicks',()=>{
+test('the tab list shows that it scrolls with a round chevron in its corner, clear of a scrollbar, without adding a tab stop; no fades',()=>{
   assert.match(html,/<div class="tab-scroll" id="tabScroll"><div id="tabs" class="tab-list"[^>]*><\/div><button class="scroll-cue" id="moreTabs" type="button" tabindex="-1" aria-hidden="true" title="More tabs below" hidden><svg[^>]*aria-hidden="true"/);
-  const fades=css.match(/\.tab-scroll::before, \.tab-scroll::after \{([^}]+)\}/)[1];
-  assert.match(fades,/pointer-events: none/);assert.match(fades,/opacity: 0/);assert.match(fades,/right: calc\(1px \+ var\(--scrollbar, 0px\)\)/);
-  assert.match(css,/\.tab-scroll\.more-above::before, \.tab-scroll\.more-below::after \{ opacity: 1; \}/);
-  // Fades use the panel's own colour, so they work in light, dark and Auto.
-  assert.match(css,/\.tab-scroll::after \{[^}]*background: linear-gradient\(transparent, var\(--control\)/);
-  assert.match(css,/\.tab-list \{[^}]*scroll-padding-block: 24px 56px/,'keyboard focus scrolls rows clear of the fades');
-  assert.match(css,/prefers-reduced-motion: reduce\) \{ \.tab-scroll::before, \.tab-scroll::after \{ transition: none; \}/);
-  assert.match(css,/\.individual-intro, \.tab-scroll, \.individual-section #tabStatus \{ margin-left: 0; \}/,'full width on narrow pages');
+  assert.match(css,/button\.scroll-cue \{ position: absolute; right: calc\(8px \+ var\(--scrollbar, 0px\)\); bottom: 8px;[^}]*border-radius: 50%; \}/);
+  assert(!/\.tab-scroll::(before|after)|more-above|more-below/.test(css),'no fades');
+  assert.match(css,/\.tab-list \{[^}]*border-radius: 2px; background: var\(--field\); \}/,'a list you read through');
 });
 
 // The page runs against the real worker engine (tests/helpers.js), so sync
 // requests use the real rules. Tab listing and protection are simulated.
 const timed=new WeakSet();
-async function page(t,{settings={...DEFAULTS,appearance:'dark'},fail=false,sync={},policy={},customized={},tabs=[{id:11,windowId:1,title:'Research'},{id:12,windowId:2,title:'x'.repeat(400)}],reduced=false}={}){
+async function page(t,{settings={...DEFAULTS,appearance:'dark'},fail=false,sync={},policy={},customized={},local={},tabs=[{id:11,windowId:1,title:'Research'},{id:12,windowId:2,title:'x'.repeat(400)}],reduced=false}={}){
   // A number waits a moment before saving; tests move the clock themselves.
   if(!timed.has(t)){t.mock.timers.enable({apis:['setTimeout']});timed.add(t);}
   const elements=new Map(),messages=[],storageListeners=[],pageListeners={};
@@ -123,6 +110,8 @@ async function page(t,{settings={...DEFAULTS,appearance:'dark'},fail=false,sync=
   const groupBoxes=[...html.matchAll(/data-sync-group="(\w+)"/g)].map(m=>node({dataset:{syncGroup:m[1]}}));
   el('syncList').disabled=true;
   const h=harness(2,3);h.local.settings=validateSettings(settings);h.local.syncPolicy=policy;h.local.customized=customized;Object.assign(h.sync,sync);
+  // The popup's own keys (its warnings, the What's new note) share storage.local with the settings.
+  Object.assign(h.local,structuredClone(local));
   await h.restart();
   // Chrome reports each storage write to every extension page, after the write.
   const set=h.api.storage.local.set;h.api.storage.local.set=async values=>{await set(values);
@@ -138,7 +127,10 @@ async function page(t,{settings={...DEFAULTS,appearance:'dark'},fail=false,sync=
   globalThis.document={getElementById:el,createElement:tag=>node({tagName:tag.toUpperCase()}),get activeElement(){return all.find(n=>n.focused);},
     visibilityState:'visible',addEventListener:(type,fn)=>(pageListeners[type]||=[]).push(fn),
     querySelectorAll:selector=>({'input[name=appearance]':themes,'.settings-fields':groups,'input[data-sync]':boxes,'input[data-sync-group]':groupBoxes})[selector]||[]};
-  globalThis.chrome={storage:{onChanged:{addListener:fn=>storageListeners.push(fn)},local:{get:async()=>({settings:structuredClone(h.local.settings)})}},runtime:{getManifest:()=>JSON.parse(read('manifest.json')),async sendMessage(msg){
+  const opened=[];
+  const changed=changes=>new Promise(resolve=>setImmediate(()=>{storageListeners.forEach(fn=>fn(changes,'local'));resolve();}));
+  globalThis.chrome={storage:{onChanged:{addListener:fn=>storageListeners.push(fn)},local:{get:async keys=>keys==='settings'?{settings:structuredClone(h.local.settings)}:h.api.storage.local.get(keys),
+    remove:async keys=>{const changes={};for(const k of [].concat(keys))if(k in h.local){changes[k]={oldValue:h.local[k]};delete h.local[k];}if(Object.keys(changes).length)changed(changes);}}},runtime:{getManifest:()=>JSON.parse(read('manifest.json')),async sendMessage(msg){
     messages.push(structuredClone(msg));
     if(msg.type==='settings'&&fail)return {ok:false,error:'Worker unavailable'};
     if(msg.type==='status')return reply({tabs,protectedIds});
@@ -146,7 +138,7 @@ async function page(t,{settings={...DEFAULTS,appearance:'dark'},fail=false,sync=
     const run=queue.then(()=>h.p.message(structuredClone(msg),{id:'test',url:'chrome-extension://test/options.html'}));queue=run.catch(()=>{});
     try{return reply(await run);}
     catch(error){return {ok:false,error:error.message};}
-  }},tabs:{create:async()=>({})}};
+  }},tabs:{create:async props=>{opened.push(props);return {};}}};
   t.after(()=>Object.assign(globalThis,old));
   const choose=value=>{for(const r of themes)r.checked=r.value===value;};
   const box=key=>boxes.find(b=>b.dataset.sync===key),group=name=>groupBoxes.find(b=>b.dataset.syncGroup===name);
@@ -162,11 +154,16 @@ async function page(t,{settings={...DEFAULTS,appearance:'dark'},fail=false,sync=
   // Another page or computer: the worker stores the change, then Chrome tells every page.
   const remote=async settings=>{await h.p.applySettings(validateSettings(settings),false);await flush();await flush();await flush();};
   const sent=type=>messages.filter(m=>m.type===type);
+  // Tab protection changed: the worker saves it in storage.session, then Chrome tells every page.
+  const protection=ids=>{protectedIds=ids;storageListeners.forEach(fn=>fn({runtimeState:{newValue:{states:{},protectedIds:ids}}},'session'));};
   // A change as Chrome reports it: a box or menu when it changes; a number or text box on Enter or when you leave it.
   const change=async(id,value)=>{const n=el(id);if(typeof value==='boolean')n.checked=value;else n.value=value;await n.fire('change');await flush();await flush();};
   const hide=async()=>{globalThis.document.visibilityState='hidden';for(const fn of pageListeners.visibilitychange||[])fn();await flush();await flush();};
-  const p={h,el,themes,groups,boxes,box,group,click,tree,choices,pick,messages,sent,choose,remote,change,hide,tick:ms=>t.mock.timers.tick(ms),stored:()=>h.p.settings,resize:()=>resizers.forEach(fn=>fn()),
-    confirms,answer:value=>{answer=value;},
+  const p={h,el,tabs,themes,groups,boxes,box,group,click,tree,choices,pick,messages,sent,choose,remote,change,hide,protection,tick:ms=>t.mock.timers.tick(ms),stored:()=>h.p.settings,resize:()=>resizers.forEach(fn=>fn()),
+    confirms,answer:value=>{answer=value;},opened,
+    // The popup writes its own key: Chrome tells this page after the write.
+    popupWrites:async values=>{const changes=Object.fromEntries(Object.entries(values).map(([k,v])=>[k,{oldValue:h.local[k],...(v===undefined?{}:{newValue:v})}]));
+      for(const [k,v] of Object.entries(values))if(v===undefined)delete h.local[k];else h.local[k]=structuredClone(v);await changed(changes);await flush();},
     checked:()=>themes.filter(r=>r.checked).map(r=>r.value)};
   return p;
 }
@@ -212,23 +209,49 @@ test('individual tabs: refresh lists every tab, checkboxes protect immediately a
   assert.equal(p.el('tabs').children[1].children[0].checked,true);
 });
 
-test('scroll cue follows the list: none without overflow; below at the top, both in the middle, above at the bottom',async t=>{
+test('individual tabs: the open list follows protection changed elsewhere, such as Clear protected tabs in the popup, without Refresh',async t=>{
+  const p=await load(await page(t),'protection-elsewhere');
+  const ticked=()=>p.el('tabs').children.map(row=>row.children[0].checked),fetched=()=>p.sent('status').length;
+  p.protection([11]);await flush();assert.equal(fetched(),0,'closed: nothing is fetched');
+  p.el('individual').open=true;await p.el('individual').fire('toggle');await flush();assert.deepEqual(ticked(),[true,false]);
+  // Cleared, or protected, elsewhere: the list updates at once.
+  p.protection([]);await flush();assert.equal(fetched(),2);assert.deepEqual(ticked(),[false,false]);
+  p.protection([12]);await flush();assert.equal(fetched(),3);assert.deepEqual(ticked(),[false,true]);
+  // A box ticked here already shows its change. Neither a save made before its request is handled (a window
+  // parking, say) nor the save of its own change fetches and rebuilds the list under it.
+  const box=p.el('tabs').children[0].children[0];box.checked=true;
+  const ticking=box.fire('change');p.protection([12]);await ticking;p.protection([12,11]);await flush();
+  assert.equal(fetched(),3);assert.equal(p.el('tabs').children[0].children[0],box);assert.deepEqual(ticked(),[true,true]);
+  assert.equal(p.el('tabStatus').textContent,'Tab protection updated.');
+  // Saves that leave protection as shown (a window parking, say) fetch nothing either.
+  p.protection([12,11]);await flush();assert.equal(fetched(),3);
+  // One tab unprotected elsewhere (in the popup, say): the list is fetched again.
+  p.protection([11]);await flush();assert.equal(fetched(),4);assert.deepEqual(ticked(),[true,false]);
+  // Keyboard focus on a box survives the rebuild, on the same tab's new box; if that tab has gone, Refresh list has it.
+  p.el('tabs').children[1].children[0].focus();p.protection([]);await flush();assert.equal(fetched(),5);
+  assert(p.el('tabs').children[1].children[0].focused,'the same tab keeps focus');
+  p.el('tabs').children[1].children[0].focus();p.tabs.pop();p.protection([11]);await flush();assert.equal(fetched(),6);
+  assert(p.el('refresh').focused,'a tab that is gone hands focus to Refresh list');
+  p.el('individual').open=false;p.protection([]);await flush();assert.equal(fetched(),6,'closed again');
+});
+
+test('scroll cue follows the list: shown only while there is more below',async t=>{
   const p=await load(await page(t),'cue');
   const list=p.el('tabs'),scroll=p.el('tabScroll'),cue=p.el('moreTabs');
-  const state=()=>({above:scroll.classes.has('more-above'),below:scroll.classes.has('more-below'),cue:!cue.hidden});
+  const state=()=>({cue:!cue.hidden,classes:[...scroll.classes]});
   const at=async(top,{height=900,visible=338}={})=>{Object.assign(list,{scrollHeight:height,clientHeight:visible,scrollTop:top});await list.fire('scroll');return state();};
-  assert.deepEqual(await at(0,{height:300,visible:300}),{above:false,below:false,cue:false},'short list: nothing implied');
-  assert.deepEqual(await at(0,{height:340}),{above:false,below:true,cue:true},'just overflowing');
-  assert.deepEqual(await at(0),{above:false,below:true,cue:true},'top');
-  assert.deepEqual(await at(281),{above:true,below:true,cue:true},'middle');
-  assert.deepEqual(await at(562),{above:true,below:false,cue:false},'bottom');
-  assert.deepEqual(await at(561.5),{above:true,below:false,cue:false},'fractional bottom still counts');
-  assert.deepEqual(await at(0,{height:9000}),{above:false,below:true,cue:true},'very long list');
+  assert.deepEqual(await at(0,{height:300,visible:300}),{cue:false,classes:[]},'short list: nothing implied');
+  assert.deepEqual(await at(0,{height:340}),{cue:true,classes:[]},'just overflowing');
+  assert.deepEqual(await at(0),{cue:true,classes:[]},'top');
+  assert.deepEqual(await at(281),{cue:true,classes:[]},'middle');
+  assert.deepEqual(await at(562),{cue:false,classes:[]},'bottom');
+  assert.deepEqual(await at(561.5),{cue:false,classes:[]},'fractional bottom still counts');
+  assert.deepEqual(await at(0,{height:9000}),{cue:true,classes:[]},'very long list');
   // Refreshing to a shorter list, or resizing, clears the cue without a scroll event.
   Object.assign(list,{scrollHeight:120,clientHeight:120,scrollTop:0});
-  p.el('individual').open=true;await p.el('refresh').fire('click');await flush();assert.deepEqual(state(),{above:false,below:false,cue:false});
-  Object.assign(list,{scrollHeight:900,clientHeight:338});p.resize();assert.deepEqual(state(),{above:false,below:true,cue:true});
-  // A scrollbar that takes up space (Windows) is kept clear of the fades; macOS overlay scrollbars take none.
+  p.el('individual').open=true;await p.el('refresh').fire('click');await flush();assert.deepEqual(state(),{cue:false,classes:[]});
+  Object.assign(list,{scrollHeight:900,clientHeight:338});p.resize();assert.deepEqual(state(),{cue:true,classes:[]});
+  // A scrollbar that takes up space (Windows) is kept clear of the chevron; macOS overlay scrollbars take none.
   Object.assign(list,{offsetWidth:600,clientWidth:583});p.resize();assert.equal(scroll.style.props['--scrollbar'],'15px');
   Object.assign(list,{offsetWidth:600,clientWidth:598});p.resize();assert.equal(scroll.style.props['--scrollbar'],'0px');
   await cue.fire('click');assert.deepEqual(list.scrolls,[{top:338*0.8,behavior:'smooth'}]);
@@ -353,7 +376,7 @@ test('sync: a single setting asks one question; if a value changes meanwhile, it
 test('sync: a synced value this version can’t use is explained, and only safe choices are offered',async t=>{
   const p=await load(await page(t,{sync:{sleepingMode:'smart'}}),'sync-unusable');
   await p.click(p.box('sleepingMode'));
-  const [row]=p.choices();assert.equal(row.note,'The synced value can’t be used by this version of Chrome Window Parker.');
+  const [row]=p.choices();assert.equal(row.note,'The synced value can’t be used by this version of Window Parker.');
   assert.deepEqual(row.options.map(o=>o.text),['Use this computer’s: Let Chrome decide','Don’t sync this setting']);
   await p.pick('Tab sleeping','Don’t sync');await p.el('applySync').fire('click');await flush();await flush();
   assert.equal(p.el('syncStatus').textContent,'Tab sleeping stays on this computer.');assert.equal(p.box('sleepingMode').checked,false);
@@ -383,6 +406,10 @@ test('keyboard focus stays on Restore defaults and Refresh list while they work'
     p.el(id).focus();const done=run();p.el(id).focused=false;await done;await flush();await flush();
     assert(p.el(id).focused,id);
   }
+  // The same for a tab's box in the list, which is disabled while its protection is saved.
+  p.el('individual').open=true;await p.el('individual').fire('toggle');await flush();
+  const box=p.el('tabs').children[0].children[0];box.focus();box.checked=true;const saving=box.fire('change');box.focused=false;await saving;
+  assert(box.focused,'the tab box keeps focus');assert.equal(box.checked,true);
 });
 
 test('excluded sites: Clean up sorts, removes repeats and saves like any edit; Undo brings the old list back; the factory list is already clean',async t=>{
@@ -430,13 +457,70 @@ test('excluded sites: Clean up of a synced list saves and syncs like any edit; n
   assert.equal(p.h.p.customized.exclusions,true);assert.equal(p.h.p.policy.exclusions,true);
 });
 
+// In Chrome the new list replaces the whole old one as one edit, so one Undo brings the old text back.
+const editing=(t,sites)=>{const commands=[];globalThis.document.execCommand=(command,ui,text)=>{commands.push([command,text,sites.selectionStart,sites.selectionEnd]);
+  sites.setRangeText(text,sites.selectionStart,sites.selectionEnd);return true;};t.after(()=>{delete globalThis.document.execCommand;});return commands;};
+
+test('excluded sites: Clean up removes blank lines and spaces or tabs around entries, even when they are already in order without repeats',async t=>{
+  const policy={exclusions:true,delayMinutes:true};
+  const p=await load(await page(t,{settings:{...DEFAULTS,exclusions:['zoom.us']},policy,sync:{exclusions:['zoom.us'],delayMinutes:15}}),'sites-clean-blank');
+  const sites=p.el('exclusions'),commands=editing(t,sites);
+  const typed='\n  meet.google.com\t\n\n \t \nzoom.us  \n';sites.value=typed;
+  p.el('cleanUpSites').focus();await p.el('cleanUpSites').fire('click');await flush();await flush();
+  assert.deepEqual(commands,[['insertText','meet.google.com\nzoom.us',0,typed.length]],'one edit, so one Undo');
+  assert.equal(sites.value,'meet.google.com\nzoom.us');assert(p.el('cleanUpSites').focused,'focus stays on the button');
+  // Chrome reports the edit when the focus moves to the button; leaving the box later changes nothing. Saved once.
+  await sites.fire('change');await sites.fire('blur');await flush();await flush();
+  assert.equal(p.sent('configure').length,1);assert.deepEqual(p.stored().exclusions,['meet.google.com','zoom.us']);
+  assert.deepEqual(p.h.sync.exclusions,['meet.google.com','zoom.us'],'synced like any edit');
+  assert.deepEqual(Object.keys(p.h.p.policy).filter(k=>p.h.p.policy[k]).toSorted(),Object.keys(policy).toSorted(),'sync choices unchanged');
+  // Only blank lines and spaces to remove, from the list in use: the box is tidied, and there is nothing to save.
+  sites.value='meet.google.com\n\n zoom.us';await p.el('cleanUpSites').fire('click');await flush();await flush();
+  assert.equal(sites.value,'meet.google.com\nzoom.us');assert.equal(commands.length,2);assert.equal(p.sent('configure').length,1);
+  // Run again, it has nothing to do.
+  await p.el('cleanUpSites').fire('click');await flush();assert.equal(commands.length,2);assert.equal(p.sent('configure').length,1);
+});
+
+test('excluded sites: pasted Windows (CRLF) and old Mac (CR) line endings leave nothing stray, after Clean up or saving',async t=>{
+  const p=await load(await page(t,{settings:{...DEFAULTS,exclusions:['zoom.us']}}),'sites-line-endings');const sites=p.el('exclusions');
+  sites.value='zoom.us\n';Object.assign(sites,{selectionStart:8,selectionEnd:8});let prevented=false;
+  await sites.fire('paste',{clipboardData:{getData:type=>type==='text/plain'?'https://www.example.com/\r\nmeet.google.com\rhttps://example.com/work/*\r':''},preventDefault(){prevented=true;}});
+  assert(prevented);assert.equal(sites.value,'zoom.us\nwww.example.com\nmeet.google.com\nhttps://example.com/work/*','one site per line; the home address became its website');
+  await p.el('cleanUpSites').fire('click');await flush();await flush();
+  assert.equal(sites.value,'https://example.com/work/*\nmeet.google.com\nwww.example.com\nzoom.us');
+  assert.deepEqual(p.stored().exclusions,['https://example.com/work/*','meet.google.com','www.example.com','zoom.us']);
+  assert(!/\r/.test(sites.value+p.h.local.settings.exclusions.join('')),'no stray characters');
+});
+
+test('excluded sites: Clean up of a clean list touches nothing: no edit, no Undo step, no save, and no change counted as made here',async t=>{
+  const p=await load(await page(t,{settings:{...DEFAULTS,exclusions:['meet.google.com','zoom.us']}}),'sites-clean-untouched');
+  const sites=p.el('exclusions'),commands=editing(t,sites);let text=sites.value,writes=0;
+  Object.defineProperty(sites,'value',{get:()=>text,set:value=>{writes++;text=value;},configurable:true});
+  const button=p.el('cleanUpSites');button.focus();
+  for(let i=0;i<2;i++){await button.fire('click');await flush();}
+  assert.deepEqual(commands,[]);assert.equal(writes,0);assert.equal(text,'meet.google.com\nzoom.us');
+  assert.deepEqual([sites.selectionStart,sites.selectionEnd],[0,0],'not even selected');assert(button.focused&&!sites.focused);
+  assert.equal(p.sent('configure').length,0);assert.equal(p.h.p.customized.exclusions,false);
+});
+
+test('excluded sites: Clean up keeps entries that can’t be used, sorted with the rest; the list stays marked and the list in use is kept',async t=>{
+  const p=await load(await page(t,{settings:{...DEFAULTS}}),'sites-clean-invalid');const sites=p.el('exclusions'),note=p.el('sitesStatus');
+  sites.value='zoom.us\nfoo bar\n\nhttps://example.com/work/*\n  bücher.example\nfoo bar\n'+'a'.repeat(1001);
+  await p.el('cleanUpSites').fire('click');await flush();await flush();
+  assert.equal(sites.value,`${'a'.repeat(1001)}\nbücher.example\nhttps://example.com/work/*\nfoo bar\nzoom.us`);
+  assert.equal(sites.ariaInvalid,'true');assert(note.classes.has('error'));
+  assert.equal(note.textContent,'A site can be at most 1,000 characters long. The previous list is still in use.');
+  assert.equal(p.sent('configure').length,0);assert.deepEqual(p.stored().exclusions,DEFAULTS.exclusions);assert.equal(p.h.p.customized.exclusions,false);
+});
+
 test('Settings shows the installed version from the manifest as quiet text; the popup does not',async t=>{
   const p=await load(await page(t),'version');
   assert.equal(p.el('version').textContent,`v${JSON.parse(read('manifest.json')).version}`);
   assert.match(html,/<p class="version-tag" id="version"><\/p>/,'no version written into the page');
   assert(!/\d+\.\d+\.\d+/.test(read('options.js')),'no version constant in the script');
-  assert.match(css,/\.version-tag \{ position: absolute;/,'out of the layout flow, so it adds no height');
-  for(const file of ['popup.html','popup.js'])assert(!/getManifest|version/i.test(read(file)),file);
+  assert.match(css,/\.version-tag \{ position: absolute; top: 7px; left: 10px;[^}]*color: var\(--muted\);[^}]*font-variant-numeric: tabular-nums; \}/,
+    'out of the layout flow, in the top-left corner opposite the scrollbar, in muted text (5.39:1 and 6.33:1, see the colour pairs)');
+  for(const file of ['popup.html','popup.js','parked.html','parked.js'])assert(!/getManifest|version/i.test(read(file)),file);
 });
 
 test('excluded sites: pasted home-page addresses on whole lines become websites; other pastes are left alone',async t=>{
@@ -520,45 +604,107 @@ test('Restore defaults asks first, naming what is lost; Cancel changes nothing',
   assert.equal(p.sent('reset').length, 1); assert.deepEqual(p.stored().exclusions, DEFAULTS.exclusions);
 });
 
-test('screen readers hear units and hints: number boxes are described by their units, the main switch by its hint',()=>{
-  for(const [id,unit,text] of [['delayMinutes','delayUnit','minutes'],['dwellSeconds','dwellUnit','seconds']]){
-    assert.match(html,new RegExp(`<input id="${id}"[^>]*aria-describedby="${unit}"`),id);
+test('Restore confirmation warnings turns the popup’s warnings back on, says so briefly, and is disabled with nothing to restore',async t=>{
+  const p=await load(await page(t,{local:{skipWarnings:{closeParked:true,clearProtected:true}}}),'warnings');
+  const button=p.el('restoreWarnings');
+  assert.equal(button.disabled,false);assert.equal(button.title,'The popup asks again before clearing parked or protected tabs.');
+  const sent=p.messages.length;
+  button.focus();await button.fire('click');await flush();await flush();
+  assert.equal(p.h.local.skipWarnings,undefined,'both flags cleared');
+  assert(p.el('reset').focused,'keyboard focus moves to Restore defaults, not the page');
+  assert(button.disabled);assert.equal(button.title,'Both warnings are already on.');
+  assert.equal(p.el('status').textContent,'Confirmation warnings are back on.');
+  p.tick(8000);assert.equal(p.el('status').textContent,'','briefly');
+  assert.equal(p.messages.length,sent,'nothing for the worker: the flags live on this computer');
+  assert(Object.keys(p.h.sync).every(key=>key!=='skipWarnings'),'never synced');
+  // A warning turned off in the popup while Settings is open makes it available again, and back.
+  await p.popupWrites({skipWarnings:{clearProtected:true}});assert.equal(button.disabled,false);
+  await p.popupWrites({skipWarnings:undefined});assert(button.disabled);
+  // Nothing turned off, or something this version doesn't know: nothing to restore.
+  for(const [i,skip] of [undefined,{},{closeParked:false},'yes',[true]].entries()){
+    const q=await load(await page(t,{local:skip===undefined?{}:{skipWarnings:skip}}),`warnings-none-${i}`);
+    assert(q.el('restoreWarnings').disabled,JSON.stringify(skip));assert.equal(q.el('restoreWarnings').title,'Both warnings are already on.');
+  }
+});
+
+test('Restore defaults leaves the confirmation warnings alone',async t=>{
+  const p=await load(await page(t,{local:{skipWarnings:{closeParked:true}}}),'warnings-reset');
+  await p.el('reset').fire('click');await flush();await flush();
+  assert.equal(p.sent('reset').length,1);assert.deepEqual(p.h.local.skipWarnings,{closeParked:true});
+  assert.equal(p.el('restoreWarnings').disabled,false);
+  assert.equal(p.el('status').textContent,'Defaults restored. Sync is now off on this computer; your other computers keep their settings.');
+});
+
+test('the Changelog link in Support opens the releases only on a click, and clears the popup’s “What’s new”',async t=>{
+  const {CHANGELOG_URL}=await import('../support.js');
+  const p=await load(await page(t,{local:{whatsNew:'2.0'}}),'changelog');const link=p.el('changelog');
+  assert.deepEqual(p.opened,[],'nothing opens by itself');
+  await link.fire('click',{isTrusted:false});assert.deepEqual(p.opened,[]);assert.equal(p.h.local.whatsNew,'2.0');
+  await link.fire('click');await flush();
+  assert.deepEqual(p.opened,[{url:CHANGELOG_URL,active:true}]);assert.equal(p.h.local.whatsNew,undefined);
+  assert.match(html,/<button class="link" id="changelog" type="button" aria-label="Changelog \(opens in a new tab\)">Changelog<\/button>/,'always “Changelog” here');
+  assert(!/whatsNew/.test(read('options.js').replace(/chrome\.storage\.local\.remove\('whatsNew'\)/,'')),'Settings only clears the note');
+});
+
+test('screen readers hear units and hints: number boxes are described by their units and help, the main switch by its hint; only visible help is referenced',()=>{
+  for(const [id,described,unit,text] of [['delayMinutes','delayUnit','delayUnit','minutes'],['dwellSeconds','dwellUnit dwellHelp','dwellUnit','seconds']]){
+    assert.match(html,new RegExp(`<input id="${id}"[^>]*aria-describedby="${described}"`),id);
     assert.match(html,new RegExp(`<span id="${unit}">${text}</span>`),unit);
   }
+  assert.match(html,/<p class="hint" id="dwellHelp">Passing through a desktop won’t wake its window\.<\/p><\/div><\/div>/,'under its control');
+  assert.match(html,/<select id="sleepingMode" aria-describedby="sleepingHelp">[\s\S]*?<\/select>\n<p class="hint" id="sleepingHelp">/);
   // The hint is the checkbox's description, not part of its name.
   assert.match(html,/<input id="enabled" type="checkbox" aria-describedby="enabledHelp"><span>Enable automatic parking<span class="hint" id="enabledHelp" aria-hidden="true">/);
-});
-
-test('text boxes and menus have edges with at least 3:1 contrast, in light and dark',()=>{
-  const lum=hex=>{const [r,g,b]=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(c=>c<=0.03928?c/12.92:((c+0.055)/1.055)**2.4);return 0.2126*r+0.7152*g+0.0722*b;};
-  const contrast=(a,b)=>{const [x,y]=[lum(a),lum(b)].sort((p,q)=>q-p);return (x+0.05)/(y+0.05);};
-  const light=css.match(/:root \{([^}]+)\}/)[1],dark=css.match(/:root\[data-theme="dark"\] \{([^}]+)\}/)[1];
-  const token=(block,name)=>{const m=block.match(new RegExp(`--${name}: #([0-9a-f]{6}|[0-9a-f]{3})\\b`));assert(m,name);
-    return '#'+(m[1].length===3?[...m[1]].map(c=>c+c).join(''):m[1]);};
-  for(const block of [light,dark]){
-    const edge=token(block,'field-border');
-    for(const behind of [token(block,'background'),token(block,'control')])assert(contrast(edge,behind)>=3,`${edge} on ${behind}`);
+  // A hidden element named in aria-describedby is still read out, so every one is on the page and not hidden.
+  for(const [,ids] of html.matchAll(/aria-describedby="([^"]+)"/g))for(const id of ids.split(' ')){
+    const tag=html.match(new RegExp(`<[^>]+ id="${id}"[^>]*>`))?.[0];assert(tag,id);assert(!/\shidden[\s>]/.test(tag),id);
+    assert(!html.slice(0,html.indexOf(tag)).match(/<details\b[^>]*>(?![\s\S]*<\/details>)/),`${id}: not inside a closed disclosure`);
   }
-  assert.match(css,/input\[type=number\], select, textarea \{[^}]*border: 1px solid var\(--field-border\)/);
+  // Sites to exclude: one line of help; the rest is behind “More about excluded sites”.
+  assert.match(html,/<label class="field-label" for="exclusions">Sites to exclude<\/label>\n<p class="hint" id="exclusionHelp">One website per line, such as <code>meet\.google\.com<\/code>\.<\/p>\n<textarea id="exclusions"[^>]*aria-describedby="sitesStatus exclusionHelp"/);
+  const more=html.match(/<details class="more"><summary>More about excluded sites<\/summary>([\s\S]*?)<\/details>/)[1];
+  for(const text of ['Paste a site’s home address to exclude the whole site.','A website also covers addresses that end in it','If an excluded site is the selected tab, that window will not park.','An excluded background tab does not prevent parking.'])
+    assert(more.includes(text),text);
+  assert.match(html,/<span class="hint" id="cleanUpHelp">Sorts the list by website and removes duplicates and blank lines\.<\/span>/);
 });
 
-test('in High Contrast (forced colours) the chosen theme is still marked, in system colours',()=>{
-  assert.match(css,/@media \(forced-colors: active\) \{ \.theme-option:has\(input:checked\) \{ forced-color-adjust: none; background: Highlight; color: HighlightText; \} \}/);
+test('every colour pair in the design meets WCAG AA in light and dark: text 4.5:1, edges, fills, focus and checked controls 3:1',async()=>{
+  const {tokens,pairs,contrast}=await import('../tools/ui-audit.mjs');
+  const themes=tokens(css);
+  for(const [theme,t] of Object.entries(themes))for(const [label,a,b,min] of pairs(t,theme)){
+    assert(a&&b,`${theme}: ${label}: both tokens exist`);
+    if(min)assert(contrast(a,b)>=min,`${theme}: ${label}: ${contrast(a,b).toFixed(2)}:1 (${a} on ${b})`);
+  }
+  // The 2.0 design language's colours.
+  assert.deepEqual([themes.light.page,themes.dark.page,themes.light.press,themes.dark.press,themes.dark.link,themes.light.amber,themes.dark.amber],
+    ['#EBEBE8','#25282B','#0265CB','#0E70DA','#4998FE','#935A00','#F2A541']);
+  assert.match(css,/select, input\[type=number\], textarea \{\n  border: 1px solid var\(--edge\);/);
+  assert(!/@font-face|url\(/.test(css),'no web font or loaded file');
+  assert.match(css,/--font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;/);
+});
+
+test('in High Contrast (forced colours), focus, links and the clearing actions stay visible, and nothing opts out of the system colours',()=>{
+  const forced=css.slice(css.indexOf('@media (forced-colors: active)'));
+  assert.match(forced,/:focus-visible \{ outline-color: Highlight; \}/);
+  assert.match(forced,/button\.link \{ color: LinkText; \}/);
+  assert.match(forced,/button\.danger \{ border-width: 2px; \}/);
+  assert(!/forced-color-adjust/.test(css));
 });
 
 // Settings save themselves; there is no Save button. Chrome fires change when a
 // box or menu changes, and when you press Enter in or leave a number or text box.
 test('there is no Save button: the footer says settings save themselves, beside a quieter Restore defaults',async t=>{
   assert(!/id="save"|type="submit"|Save settings/.test(html),'no Save button');
-  assert.match(html,/<div class="form-footer"><p class="hint">Changes are saved automatically\.<\/p><button class="small" id="reset" type="button">Restore defaults<\/button><p id="status" role="status" aria-live="polite"><\/p><\/div>/);
+  assert.match(html,/<div class="form-footer"><p class="hint">Changes are saved automatically\.<\/p><button class="small" id="reset" type="button">Restore defaults<\/button><button class="small" id="restoreWarnings" type="button" disabled>Restore confirmation warnings<\/button><p id="status" role="status" aria-live="polite"><\/p><\/div>/);
   // Problems are said beside what they're about, in lines that take no room while empty.
   for(const id of ['parkingStatus','sitesStatus'])assert.match(html,new RegExp(`<p id="${id}" role="status" aria-live="polite"></p>`),id);
   assert(html.indexOf('id="parkingStatus"')<html.indexOf('aria-labelledby="protection-heading"'),'in Parking');
   assert.match(html,/<textarea id="exclusions"[^>]*aria-describedby="sitesStatus [^"]*"[^>]*><\/textarea>\n<p id="sitesStatus"/,'right under the list, and part of its description');
-  assert.match(css,/#syncStatus:empty, #parkingStatus:empty, #sitesStatus:empty \{ min-height: 0; margin-top: 0; \}/);
-  assert.match(css,/#status\.error, #tabStatus\.error, #syncStatus\.error, #parkingStatus\.error, #sitesStatus\.error, \.error \{ color: var\(--error\); \}/);
-  assert.match(css,/textarea\[aria-invalid="true"\] \{ border-color: var\(--error\); \}/);
-  assert.match(css,/\.settings-page #status \{ min-height: 1lh; \}/,'its message appearing or clearing moves nothing');
+  assert.match(css,/\[role=status\]:empty \{ display: none; \}/);
+  assert.match(css,/#sitesStatus\.error, #parkingStatus\.error, #tabStatus\.error, #syncStatus\.error, #supportStatus\.error, \.settings #status\.error \{ color: var\(--danger\); \}/);
+  assert.match(css,/\.error \{ color: var\(--danger\); \}/);
+  assert.match(css,/textarea\[aria-invalid="true"\] \{ border-color: var\(--danger\); \}/);
+  assert.match(css,/\.settings-page #status \{ display: block; min-height: 1lh; \}/,'its message appearing or clearing moves nothing');
   for(const file of ['options.html','options.js'])assert(!/Settings saved|Unsaved changes|Saving…/.test(read(file)),file);
   // Enter never submits anything.
   const p=await load(await page(t),'no-submit');let prevented=false;
@@ -769,4 +915,25 @@ test('reopening Settings shows exactly what was saved',async t=>{
   const q=await load(await page(t,{settings:structuredClone(p.h.local.settings)}),'autosave-reopen-2');
   assert.equal(q.el('discardPinned').checked,true);assert.equal(q.el('delayPreset').value,'60');assert.equal(q.el('dwellSeconds').value,4.5);
   assert.equal(q.el('exclusions').value,'zoom.us\nwork.example');assert.deepEqual(q.checked(),['dark']);
+});
+
+test('individual tabs: focus you move while a refresh or a save is running stays where you put it',async t=>{
+  const p=await load(await page(t),'focus-race');
+  p.el('individual').open=true;await p.el('individual').fire('toggle');await flush();
+  // Refresh: protection changes elsewhere, then you press Tab to a theme button before the reply.
+  p.el('tabs').children[0].children[0].focus();p.protection([11]);p.themes[0].focus();await flush();await flush();
+  const afterRefresh=p.themes[0].focused;
+  // Save: you tick the first box, then move to the second before the save finishes.
+  const [first,second]=p.el('tabs').children.map(row=>row.children[0]);
+  first.focus();first.checked=!first.checked;const saving=first.fire('change');second.focus();await saving;await flush();
+  assert.deepEqual({afterRefresh,afterSave:second.focused},{afterRefresh:true,afterSave:true});
+});
+
+test('sync: Settings and the right-click menu explain a refused site list in the same words',async t=>{
+  const p=await load(await page(t,{policy:{discardPinned:true}}),'sync-words');
+  let value=false;
+  for(const code of ['too-large','too-often','unavailable']){
+    p.h.p.syncNotice=[{key:'exclusions',reason:code}];value=!value;await p.change('discardPinned',value);
+    assert.equal(p.el('syncStatus').textContent,SYNC_REFUSED[code],code);
+  }
 });

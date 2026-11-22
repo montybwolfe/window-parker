@@ -10,21 +10,26 @@ const path = file => fileURLToPath(new URL(`../../${file}`, import.meta.url));
 export const sha = file => createHash('sha256').update(readFileSync(path(file))).digest('hex');
 // Files that change how the captured extension pages look.
 export const UI = ['options.html', 'options.js', 'popup.html', 'popup.js', 'parked.html', 'parked.js', 'ui.css', 'ui.js',
-  'theme.js', 'settings.js', 'icons/parker-timer-128.png'];
+  'theme.js', 'settings.js', 'icons/window-parker.svg'];
 const shot = (n, name, uses) => ({file: `store-listing/screenshot-${n}-${name}-1280x800.png`, page: `shot-${n}-${name}.html`, width: 1280, height: 800, uses});
 export const ASSETS = [
   shot(1, 'parked', ['parked-light']), shot(2, 'popup', ['popup-light']), shot(3, 'settings', ['settings-light']),
-  shot(4, 'sync', ['settings-light']), shot(5, 'dark', ['parked-dark', 'popup-dark']),
+  shot(4, 'sync', ['settings-light']), shot(5, 'dark', ['parked-dark']),
   {file: 'store-listing/small-promo-440x280.png', page: 'promo-small.html', width: 440, height: 280, uses: []},
   {file: 'store-listing/marquee-promo-1400x560.png', page: 'promo-marquee.html', width: 1400, height: 560, uses: ['parked-light']},
   {file: 'store-listing/store-icon-128.png', page: 'icon.html', width: 128, height: 128, alpha: true, uses: []},
   {file: 'docs/assets/buy-me-a-coffee-cover-1600x400.png', page: 'cover.html', width: 1600, height: 400, uses: []}];
 export const inputsOf = asset => [`tools/store-assets/compositions/${asset.page}`, 'tools/store-assets/compositions/style.css',
-  'icons/parker-timer.svg', 'tools/store-assets/compose.mjs', 'tools/store-assets/png.mjs',
+  'icons/window-parker.svg', 'icons/window-parker-32.png', 'tools/store-assets/compose.mjs', 'tools/store-assets/png.mjs',
   ...asset.uses.map(name => `store-listing/sources/ui/${name}.png`), ...(asset.page.includes('sync') ? ['store-listing/sources/ui/capture.json'] : [])];
 
 export function verifyAssets({ui = true} = {}) {
   const problems = [], record = JSON.parse(readFileSync(path('store-listing/sources/assets.json')));
+  const captured = JSON.parse(readFileSync(path('store-listing/sources/ui/capture.json')));
+  // The artwork shows the system font, so it's made where that's the font people see: macOS or Windows.
+  for (const [file, platform] of [['assets.json', record.platform], ['ui/capture.json', captured.platform]])
+    if (!['darwin', 'win32'].includes(platform))
+      problems.push(`store-listing/sources/${file}: made on ${platform || 'an unrecorded platform'}; run capture.mjs and compose.mjs on macOS or Windows`);
   const byFile = new Map(record.assets.map(a => [a.file, a]));
   for (const asset of ASSETS) {
     const r = byFile.get(asset.file);
@@ -40,8 +45,7 @@ export function verifyAssets({ui = true} = {}) {
   for (const file of [...fields.screenshots, fields.small_promo_tile, fields.marquee_promo_tile, fields.store_icon])
     if (!byFile.has(`store-listing/${file}`)) problems.push(`fields.json lists ${file}, which has no record`);
   if (ui) {
-    const captured = JSON.parse(readFileSync(path('store-listing/sources/ui/capture.json'))).ui;
-    for (const file of UI) if (sha(file) !== captured[file]) problems.push(`${file} changed since the UI was captured; re-run capture.mjs and compose.mjs`);
+    for (const file of UI) if (sha(file) !== captured.ui[file]) problems.push(`${file} changed since the UI was captured; re-run capture.mjs and compose.mjs`);
   }
   return problems;
 }

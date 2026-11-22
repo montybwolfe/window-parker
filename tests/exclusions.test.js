@@ -96,3 +96,62 @@ test('problems with a site are explained in plain words, with what to enter inst
   for(const good of ['http://example.com/work/*','https://example.com/work/*','*://example.com/*','*.example.com','localhost:3000'])
     assert.doesNotThrow(()=>validateSettings({exclusions:[good]}),good);
 });
+
+// A small seeded generator (mulberry32), so any failure reproduces exactly.
+const random=seed=>()=>{seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const usable=rules=>{try{validateSettings({exclusions:rules});return true;}catch{return false;}};
+
+test('Clean up, for random lists: the same pages stay excluded, the order never depends on the input, and a second run changes nothing',()=>{
+  const next=random(20261121),pick=list=>list[Math.floor(next()*list.length)];
+  const mixCase=text=>[...text].map(c=>next()<0.3?c.toUpperCase():c).join('');
+  const hosts=['example.com','www.example.com','docs.example.com','example.org','example.net','a.example.net','localhost','zoom.us','us02web.zoom.us','127.0.0.1','k.example'];
+  const paths=['','/','/work/*','/Work/*','/work/a','/a?x=1','/#top','/*','/x'];
+  // Entries Settings can't use are listed too: Clean up must keep them (see below).
+  const broken=['foo bar','Foo Bar','exa$mple.com','ftp://example.com','https://','bücher.example','K.example','*.'];
+  const rule=()=>{const kind=next();
+    if(kind<0.45)return `${pick(['','','*.'])}${mixCase(pick(hosts))}${pick(['','','',':8080',':443'])}`;
+    if(kind<0.9)return `${pick(['https://','http://','*://','HTTPS://'])}${mixCase(pick(hosts))}${pick(['','',':8080'])}${pick(paths)}`;
+    return pick(broken);};
+  // A large set of addresses as Chrome reports them: lowercase hosts and no default ports.
+  const urls=[...new Set(Array.from({length:600},()=>new URL(`${pick(['https://','http://'])}${pick([...hosts,'sub.example.com','sub.docs.example.com','zoom.us.evil.example','www.example.org'])}${pick(['','',':8080',':443',':80'])}${pick(['/','/work/a','/Work/a','/a?x=1','/#top','/x','/work/'])}`).href))];
+  for(let trial=0;trial<250;trial++){
+    const list=Array.from({length:1+Math.floor(next()*24)},rule),cleaned=cleanUpRules(list);
+    for(const url of urls)assert.equal(cleaned.some(r=>matchesRule(url,r)),list.some(r=>matchesRule(url,r)),`${url} with ${JSON.stringify(list)}`);
+    assert.deepEqual(cleanUpRules(cleaned),cleaned,'a second Clean up changes nothing');
+    assert.deepEqual(cleaned,cleaned.toSorted(compareRules),'sorted');
+    assert(cleaned.every(r=>list.includes(r)),'every entry is kept exactly as written');
+    assert.equal(usable(cleaned),usable(list),'a list that can’t be used still can’t, so its problem stays to see and fix');
+    for(let shuffle=0;shuffle<3;shuffle++)assert.deepEqual(cleanUpRules(list.toSorted(()=>next()-0.5)),cleaned,'shuffled input, same output');
+  }
+});
+
+test('Clean up never deletes an entry Settings can’t use: it is kept and sorted, so the list stays unusable until you fix it',()=>{
+  const long='https://example.com/'+'a'.repeat(1000),list=['zoom.us','foo bar','ftp://example.com',long,'exa$mple.com','meet.google.com'];
+  assert.deepEqual(cleanUpRules(list),list.toSorted(compareRules));assert(!usable(cleanUpRules(list)));
+  // A home address too long to use stays, even though its website is listed.
+  const host='x'.repeat(995)+'.com',home=`https://${host}/`;assert(usable([host]));assert(!usable([home]));
+  assert.deepEqual(cleanUpRules([home,host]),[host,home]);
+  // Over 200 entries: nothing is dropped to make the list fit.
+  const many=Array.from({length:201},(_,i)=>`s${String(i).padStart(3,'0')}.example`);
+  assert.deepEqual(cleanUpRules(many.toReversed()),many);assert(!usable(cleanUpRules(many)));
+  // Repeats of a broken entry are still repeats: one copy stays, as written.
+  assert.deepEqual(cleanUpRules(['foo bar','zoom.us','foo bar']),['foo bar','zoom.us']);
+});
+
+test('Clean up and Unicode: full addresses sort the same every time and all stay; non-ASCII websites stay, still marked as unusable',()=>{
+  const full=['https://bücher.example/*','https://BÜCHER.example/*','https://bücher.example/*','https://例え.テスト/','https://example.com/café','https://example.com/café',
+    'https://İstanbul.example/','https://ıstanbul.example/','https://example.com/K','https://example.com/k'];
+  const cleaned=cleanUpRules(full);
+  assert.deepEqual(cleaned.toSorted(),full.toSorted(),'every one stays: capitals, accents and their composed and decomposed forms all count');
+  const next=random(9);for(let i=0;i<50;i++)assert.deepEqual(cleanUpRules(full.toSorted(()=>next()-0.5)),cleaned);
+  assert.deepEqual(cleanUpRules(cleaned),cleaned);assert(usable(cleaned),'full addresses may use any letters');
+  // Websites must be plain ASCII (internationalised names aren't supported). Clean up keeps them, and
+  // never merges one into a usable website, even where lower-casing makes them alike (the Kelvin sign K is k).
+  for(const host of ['bücher.example','例え.テスト','İstanbul.example','K.example'])assert(!usable([host]),host);
+  const mixed=['zoom.us','K.example','k.example','bücher.example','例え.テスト'];
+  const out=cleanUpRules(mixed);
+  assert.deepEqual(out.toSorted(),mixed.toSorted(),'all kept');assert(!usable(out));
+  // Unusable entries that repeat each other (capitals or a leading *.) are kept once, as the first in A–Z order.
+  assert.deepEqual(cleanUpRules(['Bücher.example','bücher.example']),['Bücher.example']);
+  assert.deepEqual(cleanUpRules(['k.example','K.example','*.K.example']),['*.K.example','k.example']);
+});

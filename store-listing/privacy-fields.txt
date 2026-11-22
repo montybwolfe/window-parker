@@ -2,16 +2,19 @@ SINGLE PURPOSE DESCRIPTION
 Park idle Chrome windows on a lightweight page so Chrome can put their previously selected tab to sleep, and bring that tab back when the user returns. Optionally, ask Chrome to unload a parked window's other tabs straight away.
 
 TABS PERMISSION JUSTIFICATION
-Reads the address, title and state of open tabs, on the user's computer only, to apply site exclusions, remember which tab was selected, add and select the parking page, and select the previous tab again when the user returns. Only in the optional Discard immediately mode does it ask Chrome to unload loaded, eligible tabs in a newly parked window. It does not read page contents and does not send browsing information anywhere.
+Reads the address, title and state of open tabs, on the user's computer only, to apply site exclusions, remember which tab was selected, add and select the parking page, select the previous tab again when the user returns, show the current tab in the popup, and show the right-click menu items that fit the selected tab. Only in the optional Discard immediately mode does it ask Chrome to unload loaded, eligible tabs in a newly parked window. It does not read page contents and does not send browsing information anywhere.
 
 STORAGE PERMISSION JUSTIFICATION
-Saves settings and a small recovery record for each parked window (the previous tab's address, title and position) in local extension storage, and temporary window/tab state in session storage. If the user turns on sync for a setting, that setting is also stored in chrome.storage.sync so Chrome can sync it across the user's own computers. Sync is off by default and chosen per setting.
+Saves settings (including which ones sync and which were changed on this computer) and a small recovery record for each parked window (the previous tab's address, title and position) in local extension storage, and temporary window/tab state in session storage. If the user turns on sync for a setting, that setting is also stored in chrome.storage.sync so Chrome can sync it across the user's own computers. Sync is off by default and chosen per setting. The popup's own preferences also stay in local storage and never sync: whether its clearing actions are open, which confirmation questions the user turned off, the new version number for its "What's new" link after an update, and a one-time note, which can name the site, when a right-click menu item couldn't make its change.
 
 ALARMS PERMISSION JUSTIFICATION
 Schedules the inactivity checks and recovers the restore delay while the Manifest V3 service worker is stopped, instead of polling.
 
 FAVICON PERMISSION JUSTIFICATION
-Shows the previously selected tab's site icon on the parking page, next to its title, so the user can recognise a parked window. The icon is read from Chrome's own local copy of site icons through the extension's _favicon address; nothing is downloaded or sent anywhere.
+Shows the previously selected tab's site icon on the parking page, next to its title, so the user can recognize a parked window, and shows the current tab's icon in the popup. Each icon is read from Chrome's own local copy of site icons through the extension's _favicon address; nothing is downloaded or sent anywhere.
+
+CONTEXTMENUS PERMISSION JUSTIFICATION
+Adds items to Chrome's right-click menu: Protect this tab or Unprotect this tab and Exclude this site or Stop excluding this site on web pages, and Pause or Resume automatic parking on pages and the toolbar icon. They make the same changes as the popup and Settings, without opening them. A click uses only the clicked tab and its page address, on the user's computer, to make that change. It doesn't read page contents or selected text, and nothing is sent anywhere.
 
 DOWNLOADS PERMISSION JUSTIFICATION
 Checks whether any Chrome download is in progress and pauses parking until it finishes, so a download isn't interrupted. Chrome doesn't reliably report a download's source tab, so the pause applies to every window. It never starts, opens, changes or deletes downloads and keeps no download details.
@@ -21,15 +24,15 @@ No, I am not using remote code.
 All code is included in the extension package. There is no server, remote script or remotely loaded configuration.
 
 PRIVACY POLICY URL
-https://github.com/montybwolfe/chrome-window-parker/blob/main/PRIVACY.md
+https://github.com/montybwolfe/window-parker/blob/main/PRIVACY.md
 
 DATA USAGE: WHAT USER DATA IS HANDLED
-Web history: the addresses and titles of open tabs are processed on the user's computer for exclusions, restoring the previous tab and showing its title and icon on the parking page. The extension does not have Chrome's history permission and does not read browsing history.
+Web history: the addresses and titles of open tabs are processed on the user's computer for exclusions, restoring the previous tab, showing its title and icon on the parking page, showing the current tab in the popup, and the right-click menu. The extension does not have Chrome's history permission and does not read browsing history.
 User activity: window focus, tab selection and navigation timing are used on the user's computer to decide when a window is idle and when the user has returned. Keystrokes, mouse movement and page clicks are not monitored.
 If the user turns on sync for "Sites to exclude", their list of excluded domains and address patterns is stored in Chrome sync storage and synced by Chrome through the user's Google account. The developer never receives it.
 
 DATA HANDLING EXPLANATION
-All processing happens in the user's browser. Nothing is sent to the developer or third parties, sold, used for advertising, or used for creditworthiness or lending. There is no account, analytics, telemetry or tracking. Optional sync uses Chrome's own chrome.storage.sync, only for settings the user chooses. The Report a bug and Buy me a coffee buttons open GitHub or Buy Me a Coffee in a new tab only when clicked, without attaching any browsing information.
+All processing happens in the user's browser. Nothing is sent to the developer or third parties, sold, used for advertising, or used for creditworthiness or lending. There is no account, analytics, telemetry or tracking. Optional sync uses Chrome's own chrome.storage.sync, only for settings the user chooses. The Report a bug, Changelog and Buy me a coffee buttons open GitHub or Buy Me a Coffee in a new tab only when clicked, without attaching any browsing information.
 
 LIMITED USE CERTIFICATIONS
 Certify all three: the extension does not sell or transfer user data to third parties (outside the approved use cases), does not use or transfer it for purposes unrelated to its single purpose, and does not use or transfer it to determine creditworthiness or for lending.

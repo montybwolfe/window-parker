@@ -1,12 +1,12 @@
 import {cleanUpRules, simplifyRule, validateSettings} from './settings.js';
-import {bindIssues, bindSupport} from './support.js';
+import {bindIssues, bindLink, bindSupport, CHANGELOG_URL} from './support.js';
 import {request, report} from './ui.js';
 const $ = id => document.getElementById(id);
 // The installed version, from the manifest, so it can never go stale.
 $('version').textContent = `v${chrome.runtime.getManifest().version}`;
 const flags = ['enabled', 'discardPinned', 'protectAudio', 'debug'];
 const themes = [...document.querySelectorAll('input[name=appearance]')];
-const syncNames = {delayMinutes: 'Park windows after', dwellSeconds: 'Restore delay', sleepingMode: 'Tab sleeping',
+const syncNames = {delayMinutes: 'Park windows after', dwellSeconds: 'Restore after focusing', sleepingMode: 'Tab sleeping',
   appearance: 'Theme', discardPinned: 'Pinned tabs', protectAudio: 'Audio tabs', exclusions: 'Sites to exclude'};
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 let saved = null, resetting = false, fade;
@@ -167,7 +167,8 @@ sites.addEventListener('paste', event => {
   const text = event.clipboardData?.getData('text/plain') || '', {value, selectionStart: start, selectionEnd: end} = sites;
   const next = value.indexOf('\n', end), lineStart = value.lastIndexOf('\n', start - 1) + 1;
   if (value.slice(lineStart, start).trim() || value.slice(end, next < 0 ? value.length : next).trim()) return;
-  const cleaned = [...new Set(text.split(/\r?\n/).map(simplifyRule).filter(Boolean))].join('\n');
+  // Windows (CRLF) and old Mac (CR) line endings end a line too.
+  const cleaned = [...new Set(text.split(/\r\n?|\n/).map(simplifyRule).filter(Boolean))].join('\n');
   if (!cleaned || cleaned === text) return;
   event.preventDefault();
   // insertText keeps Undo working; where it isn't available, insert directly.
@@ -178,16 +179,17 @@ sites.addEventListener('paste', event => {
 sites.addEventListener('blur', () => {
   if (!pending.has('exclusions') && !same(formValue('exclusions'), {...saved, ...flying}.exclusions)) keep('exclusions');
 });
-// Clean up sorts the list and removes repeats (see cleanUpRules), and saves it
-// like any edit. It changes nothing else, and leaves a list that is already
-// clean exactly as it is. The new list replaces the old one as an edit, so Undo
+// Clean up sorts the list, removes repeats (see cleanUpRules), blank lines and
+// spaces around entries, and saves it like any edit. It changes nothing else,
+// and doesn't touch a list that is already clean: nothing is saved and Undo has
+// nothing new to undo. The new list replaces the old one as an edit, so Undo
 // in the box brings the old list back (saved when you leave the box); focus
 // stays on the button.
 $('cleanUpSites').addEventListener('click', () => {
-  const lines = sites.value.split('\n').map(line => line.trim()).filter(Boolean), cleaned = cleanUpRules(lines);
-  if (same(cleaned, lines)) return;
+  const cleaned = cleanUpRules(sites.value.split('\n').map(line => line.trim()).filter(Boolean)).join('\n');
+  if (cleaned === sites.value) return;
   sites.focus(); sites.select();
-  if (!document.execCommand?.('insertText', false, cleaned.join('\n'))) sites.value = cleaned.join('\n');
+  if (!document.execCommand?.('insertText', false, cleaned)) sites.value = cleaned;
   sites.scrollTop = 0; $('cleanUpSites').focus();
   keep('exclusions');
 });
@@ -198,6 +200,12 @@ for (const input of themes) input.addEventListener('change', async () => {
 });
 // Another Settings page, the popup or a synced computer changed something.
 chrome.storage.onChanged.addListener((changes, area) => {
+  // Tab protection changed elsewhere (Clear protected tabs in the popup, say):
+  // refresh the open tab list where it no longer shows it. Boxes you just
+  // clicked here already show their change, so they don't count.
+  const ids = changes.runtimeState?.newValue?.protectedIds;
+  if (area === 'session' && Array.isArray(ids) && $('individual').open &&
+      [...listed].some(([id, box]) => !box.disabled && box.checked !== ids.includes(id))) refresh();
   if (area !== 'local' || !saved) return;
   if (changes.settings) stored().then(settings => { if (settings) refreshFields(settings); }).catch(() => {});
   if (changes.syncPolicy?.newValue) renderSync(changes.syncPolicy.newValue);
@@ -312,7 +320,7 @@ function askChoice(conflicts, pending, changed) {
     set.append(legend);
     if (synced === null) {
       const note = document.createElement('p'); note.className = 'hint';
-      note.textContent = 'The synced value can’t be used by this version of Chrome Window Parker.'; set.append(note);
+      note.textContent = 'The synced value can’t be used by this version of Window Parker.'; set.append(note);
     }
     const options = synced === null ? [['local', `Use this computer’s: ${describe(key, local)}`], ['off', 'Don’t sync this setting']] :
       [['synced', `Use synced: ${describe(key, synced)}`], ['local', `Use this computer’s: ${describe(key, local)}`]];
@@ -338,25 +346,28 @@ $('cancelSync').addEventListener('click', cancelChoice);
 $('syncChoice').addEventListener('keydown', event => { if (event.key === 'Escape' && asking) cancelChoice(); });
 
 // The tab list scrolls inside its panel, but macOS hides scrollbars until you
-// scroll. Fade the edges, and offer a chevron, only while there is more to see.
+// scroll. Offer a chevron only while there is more to see below.
 const tabList = $('tabs'), tabScroll = $('tabScroll');
 function scrollCue() {
   const below = tabList.scrollHeight - tabList.clientHeight - tabList.scrollTop > 1;
-  tabScroll.classList.toggle('more-above', tabList.scrollTop > 1);
-  tabScroll.classList.toggle('more-below', below);
   $('moreTabs').hidden = !below;
-  // Keep the fades clear of a scrollbar that takes up space (Windows, Linux).
+  // Keep the chevron clear of a scrollbar that takes up space (Windows, Linux).
   tabScroll.style.setProperty('--scrollbar', `${Math.max(0, tabList.offsetWidth - tabList.clientWidth - 2)}px`);
 }
 tabList.addEventListener('scroll', scrollCue, {passive: true});
 new ResizeObserver(scrollCue).observe(tabList);
 $('moreTabs').addEventListener('click', () => tabList.scrollBy({top: tabList.clientHeight * 0.8,
   behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}));
+let listed = new Map(); // Each listed tab's ID and its box.
 async function refresh() {
   const focused = document.activeElement === $('refresh');
+  // Rows are rebuilt; a box that had keyboard focus gets it back on its new row.
+  const focusedTab = [...listed].find(([, box]) => box === document.activeElement)?.[0];
+  // Only take focus back if the rebuild dropped it, not if you moved it meanwhile.
+  const was = document.activeElement, dropped = () => [was, undefined, null, document.body].includes(document.activeElement);
   $('refresh').disabled = true;
   try {
-    const data = await request('status', {includeTabs: true}); $('tabs').replaceChildren();
+    const data = await request('status', {includeTabs: true}); $('tabs').replaceChildren(); listed = new Map();
     // Chrome's window IDs are long internal numbers; number windows in order instead.
     const windows = [...new Set(data.tabs.map(tab => tab.windowId))];
     for (const tab of data.tabs) {
@@ -367,16 +378,21 @@ async function refresh() {
       const windowLabel = document.createElement('span'); windowLabel.className = 'hint'; windowLabel.textContent = `Window ${windows.indexOf(tab.windowId) + 1}`;
       text.append(title, windowLabel); label.title = tab.title;
       box.addEventListener('change', async () => {
+        const focused = document.activeElement === box;
         box.disabled = true;
         try { await request('protect', {tabId: tab.id, protected: box.checked}); status('Tab protection updated.', 'tabStatus'); }
         catch (error) { box.checked = !box.checked; report(error, 'tabStatus'); }
-        finally { box.disabled = false; }
+        finally { box.disabled = false; if (focused && [box, undefined, null, document.body].includes(document.activeElement)) refocus(box); }
       });
-      label.append(box, text); $('tabs').append(label);
+      label.append(box, text); $('tabs').append(label); listed.set(tab.id, box);
     }
     if (!data.tabs.length) $('tabs').textContent = 'No web pages are open.';
   } catch (error) { report(error, 'tabStatus'); }
-  finally { $('refresh').disabled = false; scrollCue(); if (focused) refocus($('refresh')); }
+  finally {
+    $('refresh').disabled = false; scrollCue();
+    if (focused) refocus($('refresh'));
+    else if (focusedTab !== undefined && dropped()) refocus(listed.get(focusedTab) || $('refresh'));
+  }
 }
 $('refresh').addEventListener('click', refresh);
 $('individual').addEventListener('toggle', () => { if ($('individual').open) refresh(); });
@@ -385,5 +401,26 @@ request('settings').then(async s => {
   try { await refreshSync(); } catch (error) { report(error, 'syncStatus'); }
 }).catch(error => { $('loadError').hidden = false; report(error, 'loadError'); });
 
+// The popup's "Don't show this warning again" is kept on this computer only.
+// This turns both warnings back on; Restore defaults leaves them alone.
+function showWarnings(skip) {
+  const off = skip?.closeParked === true || skip?.clearProtected === true;
+  $('restoreWarnings').disabled = !off;
+  $('restoreWarnings').title = off ? 'The popup asks again before clearing parked or protected tabs.' : 'Both warnings are already on.';
+}
+$('restoreWarnings').addEventListener('click', async () => {
+  const button = $('restoreWarnings'), focused = document.activeElement === button;
+  try {
+    await chrome.storage.local.remove('skipWarnings'); showWarnings(); briefly('Confirmation warnings are back on.');
+    // The button is now disabled, so Chrome drops its focus: keep your place in the footer.
+    if (focused && [button, undefined, null, document.body].includes(document.activeElement)) $('reset').focus();
+  } catch (error) { problem(error.message, 'status'); }
+});
+chrome.storage.local.get('skipWarnings').then(local => showWarnings(local.skipWarnings)).catch(() => {});
+chrome.storage.onChanged.addListener((changes, area) => { if (area === 'local' && changes.skipWarnings) showWarnings(changes.skipWarnings.newValue); });
+
 bindSupport(document.getElementById('support'), error => report(error, 'supportStatus'));
 bindIssues($('reportBug'), error => report(error, 'supportStatus'));
+// Following the Changelog link here also clears the popup's "What's new" link.
+bindLink($('changelog'), CHANGELOG_URL, error => report(error, 'supportStatus'));
+$('changelog').addEventListener('click', event => { if (event.isTrusted) chrome.storage.local.remove('whatsNew').catch(() => {}); });

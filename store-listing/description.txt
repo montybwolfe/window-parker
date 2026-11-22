@@ -1,15 +1,19 @@
-Keep lots of Chrome windows open? Each one keeps its selected tab awake, even if you haven't looked at that window for hours. Chrome's Memory Saver puts background tabs to sleep, but it leaves the selected tab alone.
+If you keep lots of Chrome windows open, each one keeps its selected tab awake, even if you haven't looked at that window for hours. Chrome's Memory Saver puts background tabs to sleep, but it leaves the selected tab alone.
 
-Chrome Window Parker parks windows you aren't using. After 15 minutes (you can change this), it switches the window to a small parking page, so the tab you were on becomes a background tab that Chrome can put to sleep. Come back and stay a couple of seconds, and your tab returns.
+Window Parker parks windows you aren't using. After 15 minutes (you can change this), it switches the window to a small parking page, so the tab you were on becomes a background tab that Chrome can put to sleep. Come back and stay a couple of seconds, and your tab returns.
 
-• The parking page shows your tab's icon and title, so you can tell parked windows apart.
+• The parking page shows your tab's icon, title and website, so you can tell parked windows apart.
 • Your windows stay put. Tab order, pins and groups don't change.
 • Swiping quickly past a desktop won't wake its windows.
 • Let Chrome decide when tabs sleep, or unload a parked window's tabs straight away.
-• Windows stay awake when the selected tab is pinned, playing audio or on a site you exclude.
+• Windows stay awake when the selected tab is pinned, playing audio, protected or on a site you exclude.
 • Parking pauses while a download is in progress.
+• The popup shows how many windows are parked and tabs are asleep. From there you can protect the tab you're on, pause parking, or clear parked or protected tabs (it asks first).
+• Right-click a web page to protect the tab, exclude the site or pause parking.
 • Optionally keep chosen settings the same on your other computers with Chrome sync.
 • Light, dark or automatic theme.
+
+Window Parker was called Chrome Window Parker before version 2.0.
 
 Privacy: there's no account, analytics, ads or server, and nothing is sent to the developer. Sync is off unless you turn it on for a setting.
 
@@ -17,7 +21,7 @@ About Chrome's install warnings: "Read your browsing history" is how Chrome desc
 
 Designed for macOS desktops (Spaces) and tested on macOS. Needs Chrome 120 or newer. Chrome can't tell extensions about every call, upload or unsaved edit, so exclude sites where that matters.
 
-Free and open source: https://github.com/montybwolfe/chrome-window-parker
-Report a bug: https://github.com/montybwolfe/chrome-window-parker/issues
+Free and open source: https://github.com/montybwolfe/window-parker
+Report a bug: https://github.com/montybwolfe/window-parker/issues
 
 Not affiliated with Google.

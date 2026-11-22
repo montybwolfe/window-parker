@@ -1,16 +1,17 @@
 {
-  "syncTop": 1060,
+  "syncTop": 754,
+  "platform": "darwin",
   "ui": {
-    "options.html": "3188fece42f1171a45fdcea73c470ddb347dc38d579ccbe3d5731ff34ca45b46",
-    "options.js": "4ffb06de9deea98681988ff2e1ce3983ab26f4164808ca2ef8b724207952d82a",
-    "popup.html": "8909f7fbbc0a1496f23c7e9b995ca8aa75c5e1d8f631ad8b04be2cc274b3fe6c",
-    "popup.js": "cc5f672ee82cbce858ba295638ce85e408428d1e4bce1405add2a4001476994f",
-    "parked.html": "b91f5a7c6039cf35cf0dbd431d0be6b227274bdbc8713c959af41638af93b608",
-    "parked.js": "10659d860a43fb0747dbf1bdf3a4524719ceb671c19d1a50855eaa3ea3db4c2b",
-    "ui.css": "f1136a92479a1f6a80da32d8039e8ac10186be650c0db7288978d8492375bb87",
+    "options.html": "1bcc785ae26caf98f66d6023ec4eb2734bbe35ab5fcf56838f48e57bf5c8e41b",
+    "options.js": "761eff5761f315d2f09390ab83c0806722d826f09d99a46c337744d0af6cc2f2",
+    "popup.html": "af3cc41db8cbbf6b3f48cace96f8f625998b3b96f57ce510d3ef0ba2b5cb1dd9",
+    "popup.js": "8b8b9c8ee7fb024ddab5715b7ac1c60d07235a0ad01aa16870dba92844e2031c",
+    "parked.html": "4cd135d272dd728a9c38d9aaa21c2d7384fd89354ddf669b98bcf711c7b03394",
+    "parked.js": "b490af1ab86710385ac75922542cb5a0a8ad3eb1c1c93c9431e6ca2965efbca1",
+    "ui.css": "30587a0499c7a8a7b608e9e242d15dfacdcc1f987d70ed2395ba9e51cea95a02",
     "ui.js": "e0f1a1016a7411990151419cf02e64bc057834f1e6c68edc5d8069f95bd3e83f",
     "theme.js": "641bfd599e9bc2154baaa35082cf071e8fd7af5f55d6dcac6a2ffc0f7f3ec222",
-    "settings.js": "29276264d81a7424b91f7b1aac51b1db53df37a5f0d71301b648771f31cb170f",
-    "icons/parker-timer-128.png": "50a6730769833755ba65dae9e905ea23f2c02244da507777a4d8fa09b790dfc7"
+    "settings.js": "f8d1e72ead7930871be134e0f36afc8d913dea308e4ad3f432af8199c3092599",
+    "icons/window-parker.svg": "4a27e7badaf25eaf88d27fb7eaf3a830d8e58619c23df3db444795537d37a223"
   }
 }

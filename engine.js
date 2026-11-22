@@ -1,5 +1,24 @@
-import {DEFAULTS, SYNCABLE, validateSettings, storedSettings, skipReason, syncFlags, sameValue} from './settings.js';
+import {DEFAULTS, SYNCABLE, validateSettings, storedSettings, skipReason, syncFlags, sameValue, matchesRule} from './settings.js';
 import {systemClock} from './clock.js';
+
+// The right-click menu. Each intent has its own item, so a label shown a moment
+// too long can never do the opposite of what it says. Tab and site items appear
+// only on web pages; pause and resume also on the toolbar icon's own menu. No
+// item parks, restores or discards anything, or clears parked or protected tabs.
+const WEB_PAGES = ['http://*/*', 'https://*/*'];
+const MENU = [
+  {id: 'protect', title: 'Protect this tab', contexts: ['page'], documentUrlPatterns: WEB_PAGES},
+  {id: 'unprotect', title: 'Unprotect this tab', contexts: ['page'], documentUrlPatterns: WEB_PAGES},
+  {id: 'exclude', title: 'Exclude this site', contexts: ['page'], documentUrlPatterns: WEB_PAGES},
+  {id: 'stop-excluding', title: 'Stop excluding this site', contexts: ['page'], documentUrlPatterns: WEB_PAGES},
+  {id: 'covered', title: 'A rule in Settings covers this site', enabled: false, contexts: ['page'], documentUrlPatterns: WEB_PAGES},
+  {id: 'pause', title: 'Pause automatic parking', contexts: ['page', 'action']},
+  {id: 'resume', title: 'Resume automatic parking', contexts: ['page', 'action']}
+];
+// Settings' words for a site list Chrome sync refused (see options.js; a test keeps them the same).
+export const SYNC_REFUSED = {'too-large': 'Sites to exclude is too long to sync, so it stays on this computer.',
+  'too-often': 'Sites to exclude couldn’t sync because Chrome is limiting changes. Try again in a minute.',
+  unavailable: 'Sites to exclude couldn’t sync because Chrome sync isn’t available right now. Try again later.'};
 
 // All asynchronous transitions are serialized by background.js. Focus signals
 // invalidate in-flight operations synchronously, before entering that queue.
@@ -13,9 +32,10 @@ export class Parker {
     this.loaded = false; this.departedAt = null;
     this.policy = syncFlags(); this.customized = syncFlags(); this.syncNotice = null;
     this.owners = {}; this.retries = 0; this.retryTimer = null; this.deferred = false; this.replacements = [];
+    this.menus = new Map(); this.successors = new Map(); // Menu items as shown; tabs Chrome replaced.
     this.parkingURL = api.runtime.getURL('parked.html');
   }
-  log(...args) { if (this.settings.debug) console.debug('[Chrome Window Parker]', ...args); }
+  log(...args) { if (this.settings.debug) console.debug('[Window Parker]', ...args); }
   async getWindow(id) {
     try { return await this.api.windows.get(id, {populate: true}); }
     catch (error) { if (/No window with id|Invalid window ID/i.test(error.message)) return null; throw error; }
@@ -138,7 +158,8 @@ export class Parker {
     await this.startDwell();
     await this.save(); await this.schedule();
     // Sync is optional: a failure here must never stop the worker starting.
-    try { await this.pullSync(); } catch (error) { console.error('[Chrome Window Parker] sync check', error); }
+    try { await this.pullSync(); } catch (error) { console.error('[Window Parker] sync check', error); }
+    await this.refreshMenus();
   }
   // A window that closed while no worker was listening (or before its close was
   // handled) loses its state, and its recovery record with it, unless its page
@@ -187,6 +208,13 @@ export class Parker {
   follow(addedId, removedId) {
     this.protectedIds = this.protectedIds.map(id => id === removedId ? addedId : id);
     for (const s of Object.values(this.states)) if (s.previousId === removedId) s.previousId = addedId;
+    // A menu click is handled moments after it happens, so recent replacements are enough.
+    this.successors.set(removedId, addedId);
+    if (this.successors.size > 50) this.successors.delete(this.successors.keys().next().value);
+  }
+  // Protected tabs that are still open, each counted once; IDs of closed tabs don't count.
+  protectedCount(windows, ids = this.protectedIds) {
+    return windows.filter(w => this.supported(w)).reduce((n, w) => n + w.tabs.filter(t => ids.includes(t.id)).length, 0);
   }
   async focusChanged(id, at, epoch) {
     const old = this.states[this.focusedState];
@@ -444,7 +472,7 @@ export class Parker {
           // independent failures must not prevent the other pages being handled.
           for (const parking of w.tabs.filter(t => this.token(t))) {
             try { if (await this.cleanupParking(w.id, parking.id)) closed++; }
-            catch (error) { failed++; console.error('[Chrome Window Parker] parking cleanup', error); }
+            catch (error) { failed++; console.error('[Window Parker] parking cleanup', error); }
           }
           break;
         }
@@ -452,7 +480,7 @@ export class Parker {
         if (state) { state.lastUse = this.clock.now(); state.retryAt = 0; }
       } catch (error) {
         if (!/No (tab|window) with id|Invalid (tab|window) ID/i.test(error.message)) {
-          failed++; console.error('[Chrome Window Parker] window cleanup', error);
+          failed++; console.error('[Window Parker] window cleanup', error);
         }
       }
     }
@@ -683,7 +711,7 @@ export class Parker {
     this.signalFocus(this.focus); this.settings = settings;
     for (const s of Object.values(this.states)) s.retryAt = 0;
     await this.startDwell(); await this.save(); await this.schedule();
-    await this.pushSync(changed);
+    await this.pushSync(changed); await this.refreshMenus();
     return settings;
   }
   async reset() {
@@ -716,7 +744,7 @@ export class Parker {
     if (changed.every(key => key === 'appearance')) { this.settings = next; return; }
     this.signalFocus(this.focus); this.settings = next;
     for (const s of Object.values(this.states)) s.retryAt = 0;
-    await this.startDwell(); await this.save(); await this.schedule();
+    await this.startDwell(); await this.save(); await this.schedule(); await this.refreshMenus();
   }
 
   // Optional sync. Local settings always stay authoritative for everyday work;
@@ -834,6 +862,122 @@ export class Parker {
     keys = this.syncKeys(keys);
     return {status: 'off', ...await this.setPolicy({...this.policy, ...Object.fromEntries(keys.map(key => [key, false]))})};
   }
+  // An update from the Chrome Web Store (only Store builds have update_url) leaves
+  // whatsNew, the new version, for the popup. A fresh install, an unpacked build or
+  // the same version again never does. Nothing else announces an update: no badge,
+  // notification, tab or window.
+  async installed({reason, previousVersion} = {}) {
+    if (reason !== 'update') return;
+    const {version, update_url: store} = this.api.runtime.getManifest();
+    if (!store || previousVersion === version) return;
+    try { await this.api.storage.local.set({whatsNew: version}); }
+    catch (error) { console.error('[Window Parker] whatsNew', error); }
+  }
+  // contextMenus reports errors through runtime.lastError; it has promises only from Chrome 123.
+  menu(method, ...args) {
+    return new Promise((resolve, reject) => this.api.contextMenus[method](...args, () => {
+      const error = this.api.runtime.lastError;
+      if (error) reject(new Error(error.message)); else resolve();
+    }));
+  }
+  // A web page: the only kind of tab the menu's tab and site items act on.
+  menuPage(tab) { return !!tab && !tab.incognito && this.real(tab) && /^https?:\/\//.test(tab.url || ''); }
+  // A page's site in the excluded-sites list: the plain rules naming exactly its
+  // host (ignoring case and a leading *.), and any other rule that covers it.
+  siteRules(url) {
+    const host = new URL(url).host, exact = [], broader = []; // Lowercase, with a port only if it isn't the usual one.
+    for (const rule of this.settings.exclusions) {
+      if (!rule.includes('://') && rule.toLowerCase().replace(/^\*\./, '') === host) exact.push(rule);
+      else if (matchesRule(url, rule)) broader.push(rule);
+    }
+    return {host, exact, broader};
+  }
+  // The items to show, for the selected tab of the window in use: the focused
+  // one or, while none is (the popup or another app has focus), the one Chrome
+  // says was focused last, which a worker that has just started can ask for too.
+  // With no window at all, the tab and site items stay as they are.
+  async menuState() {
+    const w = Number.isInteger(this.focus) && this.focus >= 0 ? await this.getWindow(this.focus) : await this.lastFocused();
+    const shown = {pause: this.settings.enabled, resume: !this.settings.enabled};
+    if (!w) {
+      for (const id of ['protect', 'unprotect', 'exclude', 'stop-excluding', 'covered']) shown[id] = this.menus.get(id) ?? false;
+      return shown;
+    }
+    const tab = w.tabs?.find(t => t.active), page = this.menuPage(tab), site = page ? this.siteRules(tab.url) : null;
+    const on = page && this.protectedIds.includes(tab.id), excluded = page && !!site.exact.length;
+    return {...shown, protect: page && !on, unprotect: on, exclude: page && !excluded && !site.broader.length,
+      'stop-excluding': excluded && !site.broader.length, covered: page && !!site.broader.length};
+  }
+  async lastFocused() {
+    try { return await this.api.windows.getLastFocused({populate: true, windowTypes: ['normal']}); }
+    catch { return null; } // No window at all.
+  }
+  // Make the menu afresh, as it should be now (on install and update; Chrome
+  // keeps the items between worker starts). A failure never stops other work.
+  async createMenus() {
+    try {
+      await this.menu('removeAll'); this.menus.clear();
+      const shown = await this.menuState();
+      for (const item of MENU) { await this.menu('create', {...item, visible: shown[item.id]}); this.menus.set(item.id, shown[item.id]); }
+    } catch (error) { console.error('[Window Parker] menu', error); }
+  }
+  // Show and hide items to match the selected tab and the current state. An item
+  // that can't be updated (made before this version, say) means making the menu afresh.
+  async refreshMenus() {
+    try {
+      for (const [id, visible] of Object.entries(await this.menuState()))
+        if (this.menus.get(id) !== visible) { await this.menu('update', id, {visible}); this.menus.set(id, visible); }
+    } catch (error) { this.log('menu refresh failed', error.message); await this.createMenus(); }
+  }
+  // A click on a menu item. It re-reads the tab it was clicked in (following a
+  // replacement; a closed tab is ignored) and applies its intent to things as
+  // they are now: one that no longer fits does nothing. A failure changes nothing
+  // and leaves a note for the popup to show next time (menuNotice).
+  async menuClicked(info, clicked) {
+    const intent = info?.menuItemId;
+    let what = {protect: 'protect this tab', unprotect: 'unprotect this tab', exclude: 'exclude this site',
+      'stop-excluding': 'stop excluding this site', pause: 'pause automatic parking', resume: 'resume automatic parking'}[intent];
+    try {
+      if (intent === 'pause' || intent === 'resume') {
+        // The popup's path: only the pause state changes.
+        const enabled = intent === 'resume';
+        if (this.settings.enabled !== enabled) await this.configure({...this.settings, enabled}, this.settings);
+      } else if (what) {
+        let id = clicked?.id;
+        for (let i = 0; i < 10 && this.successors.has(id); i++) id = this.successors.get(id);
+        const tab = await this.getTab(id), on = intent === 'protect' || intent === 'exclude';
+        const page = this.menuPage(tab) ? new URL(tab.url) : null;
+        if (page && (intent === 'protect' || intent === 'unprotect')) await this.menuProtect(tab, on);
+        // Only the site that was right-clicked, while the tab still shows it.
+        else if (page && (!info.pageUrl || new URL(info.pageUrl).host === page.host)) {
+          what = `${on ? 'exclude' : 'stop excluding'} ${page.host}`; await this.menuExclude(tab.url, on);
+        }
+      }
+    } catch (error) { await this.noteMenu(`Couldn’t ${what}. ${error.message}`); }
+    await this.refreshMenus();
+  }
+  async menuProtect(tab, on) {
+    if (this.protectedIds.includes(tab.id) === on) return;
+    this.protectedIds = on ? [...this.protectedIds, tab.id] : this.protectedIds.filter(id => id !== tab.id);
+    try { await this.save(); }
+    catch (error) { this.protectedIds = on ? this.protectedIds.filter(id => id !== tab.id) : [...this.protectedIds, tab.id]; throw error; }
+  }
+  async menuExclude(url, on) {
+    const {host, exact, broader} = this.siteRules(url);
+    // A broader or pattern rule covers the page: only Settings changes that.
+    if (broader.length || !!exact.length === on) return;
+    const exclusions = on ? [...this.settings.exclusions, host] : this.settings.exclusions.filter(rule => !exact.includes(rule));
+    // Settings' path: it counts as a change made here, and syncs like one.
+    const notice = this.syncNotice;
+    await this.configure({...this.settings, exclusions}, this.settings);
+    // Chrome sync refused the new list: as after an edit in Settings, it stays here and stops syncing.
+    const refused = this.syncNotice !== notice && this.syncNotice?.find(({key}) => key === 'exclusions');
+    if (refused) await this.noteMenu(SYNC_REFUSED[refused.reason] || SYNC_REFUSED.unavailable);
+  }
+  async noteMenu(message) {
+    try { await this.api.storage.local.set({menuNotice: {message}}); }
+    catch (error) { console.error('[Window Parker] menu notice', error); }
+  }
   async message(msg, sender) {
     if (!msg || typeof msg.type !== 'string') throw new Error('Invalid message.');
     if (sender.id !== this.api.runtime.id) throw new Error('Invalid sender.');
@@ -871,17 +1015,34 @@ export class Parker {
       if (!tab || tab.incognito || !this.real(tab)) throw new Error('Choose a regular tab.');
       this.protectedIds = this.protectedIds.filter(id => id !== tab.id);
       if (msg.protected) this.protectedIds.push(tab.id);
-      await this.save(); return {protected: msg.protected};
+      await this.save(); await this.refreshMenus(); return {protected: msg.protected};
+    }
+    if (msg.type === 'clear-protected') {
+      // Protection only: nothing is closed, moved, reloaded, selected or unloaded,
+      // and those tabs park later with the usual timing (no sweep starts here).
+      const before = this.protectedIds, windows = await this.api.windows.getAll({populate: true, windowTypes: ['normal']});
+      // A tab Chrome replaced meanwhile counts once, under either ID.
+      const cleared = this.protectedCount(windows, [...before, ...this.protectedIds]);
+      this.protectedIds = []; await this.save(); await this.refreshMenus();
+      return {cleared};
     }
     if (msg.type === 'status') {
+      // The popup names its own window; anything but a whole number is a mistake.
+      if (msg.windowId !== undefined && !Number.isInteger(msg.windowId)) throw new Error('Invalid window.');
       const windows = await this.api.windows.getAll({populate: true, windowTypes: ['normal']});
       const supported = windows.filter(w => this.supported(w));
       // Only web pages ever park or unload, so only they are offered for protection.
       const web = t => this.real(t) && /^https?:\/\//.test(t.url || '');
-      const current = supported.find(w => w.focused)?.tabs.find(t => t.active && web(t));
+      // With a window ID, that window's selected tab, whatever has focus: while the
+      // popup has focus, Chrome reports no window as focused. Without one, the
+      // selected web page of the focused window, as before.
+      const current = msg.windowId === undefined ? supported.find(w => w.focused)?.tabs.find(t => t.active && web(t)) :
+        supported.find(w => w.id === msg.windowId)?.tabs.find(t => t.active);
       return {enabled: this.settings.enabled,
         parkingTabs: supported.reduce((n,w) => n + w.tabs.filter(t => this.token(t)).length, 0),
-        currentTab: current ? {id: current.id, protected: this.protectedIds.includes(current.id)} : null,
+        currentTab: current ? {id: current.id, title: current.title || current.url || '', url: current.url || '',
+          protected: this.protectedIds.includes(current.id), protectable: web(current)} : null,
+        protectedTabs: this.protectedCount(supported),
         ...(msg.includeTabs ? {protectedIds: this.protectedIds,
           tabs: supported.flatMap(w => w.tabs.filter(web).map(t =>
             ({id: t.id, windowId: w.id, title: t.title || t.url || 'Tab'})))} : {}),

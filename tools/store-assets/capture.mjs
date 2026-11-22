@@ -18,11 +18,13 @@ export const WINDOWS = [
   ['Reading list', 'Recipe: lemon pasta']];
 
 // Plain made-up site icons for the first page of each window, the one the
-// parking page shows. compositions/style.css draws the same icons in the frame.
+// parking page shows, and for the page the popup describes (report).
+// compositions/style.css draws the same icons in the frame.
 export const ICONS = {
   notes: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#e3a23b"/><path d="M9 11h14M9 16h14M9 21h9" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>',
   roadmap: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#2f9471"/><path d="M8 11h9M12 16h12M8 21h7" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>',
-  reading: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#c0527a"/><path d="M11 8h10v16l-5-4-5 4z" fill="#fff"/></svg>'};
+  reading: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#c0527a"/><path d="M11 8h10v16l-5-4-5 4z" fill="#fff"/></svg>',
+  report: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#c4573a"/><path d="M10 22v-5M16 22V10M22 22v-8" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>'};
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost'), icon = ICONS[url.searchParams.get('i')];
   if (url.pathname === '/icon.svg' && icon) { res.setHeader('Content-Type', 'image/svg+xml'); res.end(icon); return; }
@@ -31,14 +33,16 @@ const server = http.createServer((req, res) => {
   res.end(`<!doctype html><title>${title.replace(/[<&]/g, '')}</title>${icon ? `<link rel="icon" href="/icon.svg?i=${url.searchParams.get('i')}">` : ''}<body style="font:16px system-ui;margin:48px"><h1>${title.replace(/[<&]/g, '')}</h1>`);
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-const page = (title, icon = '') => `http://127.0.0.1:${server.address().port}/?t=${encodeURIComponent(title)}${icon && `&i=${icon}`}`;
+// Made-up sites under .example, which Chrome sends to this server (see launch
+// below), so the parking page shows a site's name rather than a local address.
+const page = (title, icon = '') => `http://${icon || 'docs'}.example/?t=${encodeURIComponent(title)}${icon && `&i=${icon}`}`;
 const log = message => console.log(`capture: ${message}`);
 async function waitFor(check, ms, what) {
   for (const end = Date.now() + ms; Date.now() < end; await sleep(1000)) if (await check()) return;
   throw new Error(`Timed out waiting for ${what}`);
 }
 
-const cdp = await launch();
+const cdp = await launch({extraArgs: [`--host-resolver-rules=MAP *.example 127.0.0.1:${server.address().port}`]});
 try {
   const {id} = await cdp.send('Extensions.loadUnpacked', {path: root});
   const url = path => `chrome-extension://${id}/${path}`;
@@ -65,10 +69,10 @@ try {
   const send = message => js(`chrome.runtime.sendMessage(${JSON.stringify(message)}).then(r => { if (!r.ok) throw new Error(r.error); return r.data; })`);
   const defaults = await send({type: 'settings'});
   const theme = async appearance => { await send({type: 'appearance', appearance}); await sleep(600); };
-  // Headless Chrome reports every visible window as focused, and the popup's
-  // Protect this tab follows the first: the startup window. Give it a web page,
-  // as the window you're using would have; a focused window never parks.
-  await js(`chrome.tabs.query({}).then(tabs => chrome.tabs.update(tabs.find(t => t.url === 'about:blank').id, {url: ${JSON.stringify(page('Team notes'))}})).then(() => 1)`);
+  // The popup describes its own window's selected tab. It opens over the startup
+  // window, which gets a web page, as the window you're using would have.
+  // Headless Chrome reports every visible window as focused; a focused window never parks.
+  const current = await js(`chrome.tabs.query({}).then(tabs => tabs.find(t => t.url === 'about:blank')).then(t => chrome.tabs.update(t.id, {url: ${JSON.stringify(page('Weekly report', 'report'))}}).then(() => t.windowId))`);
 
   // Park three windows quickly; Settings is shown with its defaults afterwards.
   await send({type: 'configure', settings: {...defaults, delayMinutes: 1, sleepingMode: 'immediate'}});
@@ -91,14 +95,30 @@ try {
     const session = await attach(cdp, target.targetId);
     await light(session);
     await js(`chrome.windows.update(${w}, {state: 'normal'}).then(() => 1)`);
-    await cdp.send('Emulation.setDeviceMetricsOverride', {width: 1120, height: 660, deviceScaleFactor: 2, mobile: false}, session, 10000);
+    // As tall as the screenshots show it, so the brand mark in its corner is in view.
+    await cdp.send('Emulation.setDeviceMetricsOverride', {width: 1120, height: 508, deviceScaleFactor: 2, mobile: false}, session, 10000);
     await sleep(700); await shot(session, name);
   };
   const parkingTarget = Object.fromEntries(await Promise.all(ids.map(async w => [w, await parkingTab(w)])));
+  // The real popup, opened from the toolbar button by the worker. Headless Chrome
+  // draws it at 1× only: a popup takes no device metrics override, and a forced
+  // scale factor stops it fitting its content. The compositions enlarge it pixel for pixel.
+  const popup = async name => {
+    await send({type: 'settings'});
+    const worker = (await cdp.send('Target.getTargets')).targetInfos.find(t => t.type === 'service_worker' && t.url === url('background.js'));
+    await js(`chrome.windows.update(${current}, {focused: true}).then(() => 1)`);
+    await evaluate(cdp, await attach(cdp, worker.targetId), `chrome.action.openPopup({windowId: ${current}}).then(() => 1)`);
+    let target;
+    await waitFor(async () => (target = (await cdp.send('Target.getTargets')).targetInfos.find(t => t.url === url('popup.html'))), 10000, 'the popup');
+    const session = await attach(cdp, target.targetId);
+    await light(session);
+    await waitFor(() => evaluate(cdp, session, `!document.getElementById('protect').disabled`), 10000, 'the popup to describe its tab');
+    await sleep(700); await shot(session, name);
+    await cdp.send('Target.closeTarget', {targetId: target.targetId});
+  };
   await send({type: 'configure', settings: {...defaults}});
   await parked(ids[0], 'parked-light');
-  await sleep(3000);
-  const P = await open('popup.html', 360, 332); await shot(P, 'popup-light', true);
+  await sleep(3000); await popup('popup-light');
 
   // The Parking group and Theme sync; Tab protection stays on this computer.
   await send({type: 'sync-enable', keys: ['sleepingMode', 'delayMinutes', 'dwellSeconds', 'appearance']});
@@ -106,9 +126,8 @@ try {
   await shot(S, 'settings-light', true);
   const syncTop = await js(`Math.round(document.querySelector('[aria-labelledby=sync-heading]').getBoundingClientRect().top + scrollY)`);
   // Record where the Sync section is, and the UI sources these captures show.
-  writeFileSync(out + 'capture.json', JSON.stringify({syncTop, ui: Object.fromEntries(UI.map(file =>
+  writeFileSync(out + 'capture.json', JSON.stringify({syncTop, platform: process.platform, ui: Object.fromEntries(UI.map(file =>
     [file, createHash('sha256').update(readFileSync(root + file)).digest('hex')]))}, null, 2) + '\n');
 
   await theme('dark'); await parked(ids[1], 'parked-dark');
-  await sleep(3000); await cdp.send('Page.reload', {}, P); await sleep(1500); await shot(P, 'popup-dark', true);
 } finally { await cdp.close(); server.close(); }

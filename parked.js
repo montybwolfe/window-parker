@@ -13,6 +13,10 @@ function showIcon(page) {
 }
 function finish() { gone = true; stopWatching(); window.removeEventListener?.('focus', refresh); }
 const count = (n, word, space = ' ') => `${n}${space}${word}${n === 1 ? '' : 's'}`;
+// The saved page's site, for web pages only.
+function host(page) {
+  try { const url = new URL(page); return /^https?:$/.test(url.protocol) ? url.host : ''; } catch { return ''; }
+}
 async function refresh() {
   if (gone || restoring) return;
   try {
@@ -20,12 +24,15 @@ async function refresh() {
     if (gone) return;
     if (info.gone) { finish(); return; }
     ownWindow = info.windowId;
-    document.title = info.title ? `Parked · ${info.title}` : 'Parked';
+    document.title = info.title ? `Parked: ${info.title}` : 'Parked';
     document.getElementById('previous').textContent = info.title;
+    document.getElementById('previousHost').textContent = host(info.url);
     showIcon(info.url);
-    document.getElementById('detail').textContent = `${info.sleeping ? count(info.sleeping, 'sleeping tab') : 'No sleeping tabs'} in this window. ` +
-      // Non-breaking spaces keep "Stay 2 seconds" on one line when the text wraps.
-      (info.enabled ? `Stay\u00a0${count(info.dwellSeconds, 'second', '\u00a0')} and your tab comes back.` : 'Automatic return is paused.');
+    document.getElementById('detailTabs').textContent = 'Your tabs are all still in this window' +
+      (info.sleeping ? `, and ${info.sleeping} of them ${info.sleeping === 1 ? 'is' : 'are'} asleep.` : '.');
+    // Non-breaking spaces keep "Stay 2 seconds" on one line when the text wraps.
+    document.getElementById('detailReturn').textContent = info.enabled ?
+      `Stay\u00a0${count(info.dwellSeconds, 'second', '\u00a0')} and your tab comes back.` : 'Automatic return is paused.';
   } catch (error) { if (!gone) report(error); }
 }
 document.getElementById('restore').addEventListener('click', async () => {

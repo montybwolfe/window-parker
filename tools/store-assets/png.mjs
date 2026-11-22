@@ -41,9 +41,12 @@ export function decode(buffer) {
 
 export function halve({width, height, pixels}) {
   const w = width >> 1, h = height >> 1, out = new Uint8Array(w * h * 4);
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) for (let k = 0; k < 4; k++) {
-    const at = (yy, xx) => pixels[(yy * width + xx) * 4 + k];
-    out[(y * w + x) * 4 + k] = (at(2 * y, 2 * x) + at(2 * y, 2 * x + 1) + at(2 * y + 1, 2 * x) + at(2 * y + 1, 2 * x + 1) + 2) >> 2;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const at = [0, 1, width, width + 1].map(d => ((2 * y) * width + 2 * x + d) * 4), o = (y * w + x) * 4;
+    const alpha = at.reduce((sum, i) => sum + pixels[i + 3], 0);
+    // Colour is weighted by alpha, so transparent pixels (stored as black) don't darken an edge.
+    for (let k = 0; k < 3; k++) out[o + k] = alpha && Math.round(at.reduce((sum, i) => sum + pixels[i + k] * pixels[i + 3], 0) / alpha);
+    out[o + 3] = (alpha + 2) >> 2;
   }
   return {width: w, height: h, pixels: out};
 }

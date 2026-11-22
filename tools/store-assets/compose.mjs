@@ -31,5 +31,5 @@ try {
       inputs: Object.fromEntries(inputsOf(asset).map(file => [file, sha(file)]))});
     console.log(`compose: ${asset.file}`);
   }
-  writeFileSync(path('store-listing/sources/assets.json'), JSON.stringify({renderedWith: chrome, assets: records}, null, 2) + '\n');
+  writeFileSync(path('store-listing/sources/assets.json'), JSON.stringify({renderedWith: chrome, platform: process.platform, assets: records}, null, 2) + '\n');
 } finally { await cdp.close(); }

@@ -14,7 +14,7 @@ const pending=new Map();let next=0,resolveReady;
 const ready=new Promise(resolve=>{resolveReady=resolve;});
 worker.addEventListener('message',({data})=>{
  if(data.kind==='ready')resolveReady();
- if(data.kind==='persist'&&!assetExport){const old=JSON.parse(localStorage.getItem('parker-browser-test')||'{}');const updated={...old,...data.value};if(JSON.stringify(old)!==JSON.stringify(updated))localStorage.setItem('parker-browser-test',JSON.stringify(updated));if(data.value.settings)emitSettings(data.value.settings);}
+ if(data.kind==='persist'&&!assetExport){const old=JSON.parse(localStorage.getItem('parker-browser-test')||'{}');const updated={...old,...data.value};for(const key of data.removed||[])delete updated[key];if(JSON.stringify(old)!==JSON.stringify(updated))localStorage.setItem('parker-browser-test',JSON.stringify(updated));if(data.value.settings)emitSettings(data.value.settings);}
  if(data.kind==='reply'){pending.get(data.id)?.(data.response);pending.delete(data.id);}
 });
 worker.addEventListener('error',error=>{document.body.dataset.workerError=error.message;});
@@ -24,6 +24,9 @@ async function send(message,type='message'){
 }
 const uiEvents=Object.fromEntries(['onUpdated','onCreated','onRemoved','onActivated','onAttached','onDetached'].map(name=>[name,{addListener(){}}]));
 const version=document.currentScript.dataset.version;
-window.chrome={runtime:{getManifest:()=>({version}),sendMessage:message=>send(message),openOptionsPage:async()=>{location.href='/options.html';}},tabs:{...uiEvents,create:async props=>{window.open(props.url,'_blank','noopener,noreferrer');document.body.dataset.externalTabsOpened=String(Number(document.body.dataset.externalTabsOpened||0)+1);return {id:90001};}},storage:{local:{get:async()=>{const response=await send({},'storage-get');if(!response.ok)throw Error(response.error);return response.data;}},onChanged:{addListener:fn=>storageListeners.add(fn),removeListener:fn=>storageListeners.delete(fn)}}};
+// The page's own keys in storage.local (the popup's clearing state, warnings and notes), kept like settings.
+const local=async(type,data)=>{const response=await send(data,type);if(!response.ok)throw Error(response.error);if(response.data.changes)storageListeners.forEach(fn=>fn(response.data.changes,'local'));return response.data.values;};
+// The popup asks for its own window: the simulated first window.
+window.chrome={runtime:{getManifest:()=>({version}),sendMessage:message=>send(message),openOptionsPage:async()=>{location.href='/options.html';}},windows:{getCurrent:async()=>({id:1,type:'normal'})},tabs:{...uiEvents,create:async props=>{window.open(props.url,'_blank','noopener,noreferrer');document.body.dataset.externalTabsOpened=String(Number(document.body.dataset.externalTabsOpened||0)+1);return {id:90001};}},storage:{local:{get:keys=>local('storage-get',{keys}),set:values=>local('storage-set',{values}),remove:keys=>local('storage-remove',{keys})},onChanged:{addListener:fn=>storageListeners.add(fn),removeListener:fn=>storageListeners.delete(fn)}}};
 const repro=document.getElementById('repro');
 if(repro)repro.addEventListener('click',async()=>{const response=await send({},'repro');document.getElementById('result').textContent=response.ok?response.data:response.error;});

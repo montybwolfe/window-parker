@@ -4,7 +4,7 @@ The Chrome Web Store screenshots, promo tiles, Store icon and the support-page c
 
 ## Regenerate
 
-Needs Node 20+ and desktop Chrome (on macOS by default; set `CHROME` to another Chrome binary if needed). Run from the repository root:
+Needs Node 20+ and desktop Chrome on macOS or Windows (Chrome's usual Mac location by default; set `CHROME` to another Chrome binary if needed). The artwork shows the system font, San Francisco or Segoe UI, so the records note the platform and `verify.mjs` refuses artwork made anywhere else. Run from the repository root:
 
 ```sh
 node tools/store-assets/capture.mjs   # about 3 minutes
@@ -12,11 +12,11 @@ node tools/store-assets/compose.mjs
 node tools/store-assets/verify.mjs
 ```
 
-**capture.mjs** installs this folder as an extension in a throwaway headless Chrome profile, opens a few windows of made-up pages served from your own machine, and lets them park for real (with a 1-minute delay). It then captures the real parked page, popup and Settings in `store-listing/sources/ui/`. Nothing from your own Chrome profile is used.
+**capture.mjs** installs this folder as an extension in a throwaway headless Chrome profile, opens a few windows of made-up pages served from your own machine under made-up `.example` site names, and lets them park for real (with a 1-minute delay). It then captures the real parked page, popup and Settings in `store-listing/sources/ui/`. The popup is the real one, opened from the toolbar button over a window showing a made-up web page, so it describes that page and offers Protect this tab. Headless Chrome draws a popup at 1× only, so the compositions enlarge it pixel for pixel. Nothing from your own Chrome profile is used.
 
 **compose.mjs** renders the designs in `compositions/` around those captures at 2× and halves them, writing opaque PNGs (the Store icon keeps its transparency). It records the SHA-256 of every output and input in `store-listing/sources/assets.json`.
 
-**icons.mjs** renders the extension's own icons (`icons/parker-timer-<size>.png`) from `icons/parker-timer.svg` at the sizes you give it, for example `node tools/store-assets/icons.mjs 16 24`. See [Icons](../../docs/ICONS.md).
+**icons.mjs** renders the extension's own icons (`icons/window-parker-<size>.png`) at the sizes you give it, each from the SVG drawn for that size, for example `node tools/store-assets/icons.mjs 16 32`; 256, 512 and 1024 write the larger copies in `docs/assets/`. See [Icons](../../docs/ICONS.md).
 
 **verify.mjs** checks sizes and transparency, that each image matches its record, and that nothing it was made from has changed since. It also checks that the captured UI still matches the extension's current pages, so stale screenshots can't slip into a release. `npm test` runs the same checks except that last one.
 
@@ -27,9 +27,9 @@ node tools/store-assets/verify.mjs
 | `store-listing/screenshot-1-parked-1280x800.png` … `-5-dark` | 1280×800 | Five screenshots, in Store order |
 | `store-listing/small-promo-440x280.png` | 440×280 | Small promo tile |
 | `store-listing/marquee-promo-1400x560.png` | 1400×560 | Marquee promo tile |
-| `store-listing/store-icon-128.png` | 128×128 | Timer at 96×96 with 16px transparent padding, as the Store asks |
+| `store-listing/store-icon-128.png` | 128×128 | The moon at 96×96 with 16px of transparent padding, as the Store asks |
 | `docs/assets/buy-me-a-coffee-cover-1600x400.png` | 1600×400 | Support-page banner |
 
-The browser frame in the screenshots is simplified context. Everything inside it is a real capture of the extension, with made-up tab names. The first made-up page in each window has a plain made-up site icon (`ICONS` in capture.mjs, drawn the same way in `compositions/style.css`), so the parking page shows one as it would for a real site.
+The browser frame in the screenshots is simplified context. Everything inside it is a real capture of the extension, with made-up tab names. The first made-up page in each window, and the page the popup describes, have a plain made-up site icon (`ICONS` in capture.mjs, drawn the same way in `compositions/style.css`), so the parking page and the popup show one as they would for a real site.
 
-Settings shows its version, small, in the page's top-right corner. That corner is outside the Settings crops, so a version bump alone doesn't change screenshots 3 and 4, though `settings-light.png` itself shows the version it was captured with.
+Settings shows its version, small, in the page's top-left corner. That corner is outside the Settings crops, so a version bump alone doesn't change screenshots 3 and 4, though `settings-light.png` itself shows the version it was captured with.
