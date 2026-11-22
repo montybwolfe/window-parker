@@ -10,8 +10,6 @@ Window Parker parks windows you aren't using. After 15 minutes (you can change t
 
 Windows stay where they are, and tabs keep their order, pins and groups. Swiping quickly past a desktop won't wake its windows.
 
-Window Parker was called Chrome Window Parker before version 2.0.
-
 ## Install
 
 Install it from the **[Chrome Web Store](https://chromewebstore.google.com/detail/chrome-window-parker/agdejolopcplaedpollnlgpboldnfbfi)**. To install by hand instead, unzip a release from [Releases](https://github.com/montybwolfe/window-parker/releases), turn on Developer mode in `chrome://extensions` and choose **Load unpacked**.

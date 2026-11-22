@@ -13,8 +13,6 @@ Window Parker parks windows you aren't using. After 15 minutes (you can change t
 • Optionally keep chosen settings the same on your other computers with Chrome sync.
 • Light, dark or automatic theme.
 
-Window Parker was called Chrome Window Parker before version 2.0.
-
 Privacy: there's no account, analytics, ads or server, and nothing is sent to the developer. Sync is off unless you turn it on for a setting.
 
 About Chrome's install warnings: "Read your browsing history" is how Chrome describes access to your open tabs' addresses and titles, which Window Parker uses for site exclusions and to bring back the right tab. It doesn't read your browsing history. "Manage your downloads" is only used to check whether a download is in progress.

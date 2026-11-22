@@ -39,4 +39,4 @@ body:
     id: extra
     attributes:
       label: Anything else?
-      description: Screenshots or debug logs can help (Settings → Diagnostics). Check them for private information first.
+      description: Screenshots or debug logs (under Diagnostics in Settings) can help. Check them for private information first.

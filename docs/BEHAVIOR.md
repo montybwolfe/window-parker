@@ -1,6 +1,6 @@
 # How Window Parker works
 
-This is the detailed version: what the extension does, what it deliberately doesn't do, and where Chrome's APIs set limits. For a quick overview, see the [README](../README.md).
+This page covers what the extension does and deliberately doesn't do, and where Chrome's APIs limit it. The [README](../README.md) has a quick overview.
 
 ## Parking
 
@@ -34,7 +34,9 @@ Changing the mode takes effect on the next parking cycle. It doesn't unload or w
 
 ## What keeps tabs and windows awake
 
-**Site exclusions.** A website such as `meet.google.com` covers that site and addresses that end in it, such as `team.meet.google.com`, but not lookalikes such as `meet.google.com.evil.example`. Websites match the standard web ports; add the port for an address such as `localhost:3000`. Website names with accented or non-Latin letters aren't supported yet. For part of a site, use a full address with `*` meaning "any text", for example `https://example.com/work/*` (full addresses are case-sensitive).
+### Site exclusions
+
+A website such as `meet.google.com` covers that site and addresses that end in it, such as `team.meet.google.com`, but not lookalikes such as `meet.google.com.evil.example`. Websites match the standard web ports; add the port for an address such as `localhost:3000`. Website names with accented or non-Latin letters aren't supported yet. For part of a site, use a full address with `*` meaning "any text", for example `https://example.com/work/*` (full addresses are case-sensitive).
 
 Pasting a site's home address on a line of its own, such as `https://www.example.com/` or `http://localhost:3000/`, adds just the website (`www.example.com`, `localhost:3000`); an address with a path, query, `#` or `*` is kept exactly as pasted. **Clean up** orders the list by website, ignoring `http://` and `https://`, then by the rest of the address, and removes duplicates: an entry listed twice, a website written with different capitals or a leading `*.`, and a home address such as `https://example.com/` when `example.com` is also listed. Everything else stays exactly as written, including other subdomains such as `www.`, ports, paths and `*`, so the same pages are excluded. It also removes blank lines and spaces around entries. It never removes an entry Settings can't use, or merges one into another, so a mistake stays in the list for you to fix, and the list isn't saved until you do. The cleaned list is saved like any other change, and Undo in the box brings back the old one. The built-in list is already clean.
 
@@ -42,11 +44,17 @@ You can also exclude the site you're on, or stop excluding it, from the [right-c
 
 If an excluded site is the selected tab, that window doesn't park. An excluded background tab doesn't stop its window parking, but Discard immediately skips it. Chrome's own Memory Saver can still unload it.
 
-**Protected tabs.** You can protect the tab you're on from the popup or the right-click menu, or any open tab from Settings under Protect individual tabs. All three offer web pages only, because only they park or unload. A protected tab keeps its window awake while it's the selected tab, and Discard immediately skips it otherwise. Protection follows the tab while you browse, even when Chrome unloads it, and lasts until Chrome restarts, the extension is updated, or you use [Clear protected tabs](#clear-parked-tabs-and-clear-protected-tabs). Settings' list of open tabs keeps up with protection changed in the popup or the menu.
+### Protected tabs
 
-**Downloads.** Chrome doesn't reliably say which tab a download came from, so any download in progress, including a paused one, pauses parking and discarding in every window. If the check fails, parking pauses too.
+You can protect the tab you're on from the popup or the right-click menu, or any open tab from Settings under Protect individual tabs. All three offer web pages only, because only they park or unload. A protected tab keeps its window awake while it's the selected tab, and Discard immediately skips it otherwise. Protection follows the tab while you browse, even when Chrome unloads it, and lasts until Chrome restarts, the extension is updated, or you use [Clear protected tabs](#clear-parked-tabs-and-clear-protected-tabs). Settings' list of open tabs keeps up with protection changed in the popup or the menu.
 
-**What Chrome can't report.** Extensions can't reliably see microphone, camera or screen sharing, silent video, Picture-in-Picture, open developer tools, unsaved form edits or uploads. Exclude or pin tabs where that matters, and add sites to Chrome's always-active list if they must never unload.
+### Downloads
+
+Chrome doesn't reliably say which tab a download came from, so any download in progress, including a paused one, pauses parking and discarding in every window. If the check fails, parking pauses too.
+
+### What Chrome can't report
+
+Extensions can't reliably see microphone, camera or screen sharing, silent video, Picture-in-Picture, open developer tools, unsaved form edits or uploads. Exclude or pin tabs where that matters, and add sites to Chrome's always-active list if they must never unload.
 
 ## The popup
 
@@ -84,7 +92,7 @@ Both are in the popup under Clear and reset tab actions, and each is unavailable
 
 If you close the last real tab in a parked window, or move it to another window, the extension removes its own parking pages and Chrome closes the now-empty window, just as it would without the extension. This works the same when it's your only Chrome window: no blank tab is added and Chrome isn't asked to quit.
 
-It's careful about it. It only removes pages it can match to its own recovery records, re-checks the window twice before each removal, waits until a dragged tab has landed, and stops if a tab is created, moved, selected or navigated in the meantime. Pages it can't verify are left for Clear parked tabs. Chrome has no "remove only if nothing changed" call, so a change in the last instant can still race a removal.
+The extension only removes pages it can match to its own recovery records. It re-checks the window twice before each removal, waits until a dragged tab has landed, and stops if a tab is created, moved, selected or navigated in the meantime. Pages it can't verify are left for Clear parked tabs. Chrome has no "remove only if nothing changed" call, so a change in the last instant can still race a removal.
 
 ## Moving a parking page
 
@@ -155,4 +163,4 @@ There are no host permissions, content scripts or remote code, and extension pag
 
 ## Debug logs
 
-Turn on **Debug logging** in Settings, then open `chrome://extensions`, find Window Parker and click **service worker**. Set the console to Verbose to see parking, restoring, skips and Chrome refusals. Logs use IDs and reasons, not page titles or addresses. Close that console before testing sleep or restarts, because it keeps the worker running.
+In Settings, tick **Enable debug logging** under Diagnostics, then open `chrome://extensions`, find Window Parker and click **service worker**. Set the console to Verbose to see parking, restoring, skips and Chrome refusals. Logs use IDs and reasons, not page titles or addresses. Close that console before testing sleep or restarts, because it keeps the worker running.
