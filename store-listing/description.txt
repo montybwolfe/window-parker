@@ -1,23 +1,22 @@
-If you keep lots of Chrome windows open, each one keeps its selected tab awake, even if you haven't looked at that window for hours. Chrome's Memory Saver puts background tabs to sleep, but it leaves the selected tab alone.
+Chrome's Memory Saver puts background tabs to sleep, but not the tab that's selected in each window. If you keep a lot of windows open, that tab stays loaded in every one of them, even in windows you haven't looked at for hours.
 
-Window Parker parks windows you aren't using. After 15 minutes (you can change this), it switches the window to a small parking page, so the tab you were on becomes a background tab that Chrome can put to sleep. Come back and stay a couple of seconds, and your tab returns.
+Window Parker parks the windows you aren't using. When a window has been idle for 15 minutes (you can change this), it selects a small parking page at the end of that window, so your tab becomes a background tab that Chrome can put to sleep. When you go back to the window and stay for a couple of seconds, your tab is selected again.
 
-• The parking page shows your tab's icon, title and website, so you can tell parked windows apart.
-• Your windows stay put. Tab order, pins and groups don't change.
-• Swiping quickly past a desktop won't wake its windows.
-• Let Chrome decide when tabs sleep, or unload a parked window's tabs straight away.
-• Windows stay awake when the selected tab is pinned, playing audio, protected or on a site you exclude.
+The parking page shows the icon, title and website of the tab you left, so you can tell parked windows apart. Window Parker never moves windows or changes tab order, pins or groups. Swiping quickly through desktops doesn't wake the windows you pass.
+
+• By default Chrome decides when a parked window's tabs sleep. You can have them unloaded straight away instead.
+• A window stays awake if its selected tab is pinned, playing audio, protected, or on a site you've excluded.
 • Parking pauses while a download is in progress.
-• The popup shows how many windows are parked and tabs are asleep. From there you can protect the tab you're on, pause parking, or clear parked or protected tabs (it asks first).
+• The toolbar popup shows how many windows are parked and how many tabs are asleep. You can protect the current tab or pause parking from there, and clear parked or protected tabs after a confirmation.
 • Right-click a web page to protect the tab, exclude the site or pause parking.
-• Optionally keep chosen settings the same on your other computers with Chrome sync.
-• Light, dark or automatic theme.
+• You can sync chosen settings between your computers with Chrome sync.
+• Light and dark themes, or follow the system setting.
 
-Privacy: there's no account, analytics, ads or server, and nothing is sent to the developer. Sync is off unless you turn it on for a setting.
+Privacy: no account, server, analytics or ads, and nothing is sent to the developer. Sync is off unless you turn it on for a setting.
 
-About Chrome's install warnings: "Read your browsing history" is how Chrome describes access to your open tabs' addresses and titles, which Window Parker uses for site exclusions and to bring back the right tab. It doesn't read your browsing history. "Manage your downloads" is only used to check whether a download is in progress.
+About Chrome's install warnings: "Read your browsing history" is how Chrome describes access to your open tabs' addresses and titles. Window Parker uses those for site exclusions and to bring back the right tab, and it can't read your browsing history. "Manage your downloads" is only used to check whether a download is in progress.
 
-Designed for macOS desktops (Spaces) and tested on macOS. Needs Chrome 120 or newer. Chrome can't tell extensions about every call, upload or unsaved edit, so exclude sites where that matters.
+Designed for macOS desktops (Spaces) and tested on macOS. Needs Chrome 120 or newer. Chrome doesn't tell extensions about every call, upload or unsaved edit, so add sites where that matters to your exclusions.
 
 Free and open source: https://github.com/montybwolfe/window-parker
 Report a bug: https://github.com/montybwolfe/window-parker/issues

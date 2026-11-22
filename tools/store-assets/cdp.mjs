@@ -8,10 +8,12 @@ import {join} from 'node:path';
 export const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-// A disposable profile: nothing touches your own Chrome profile.
-export async function launch({extraArgs = []} = {}) {
+// A disposable profile: nothing touches your own Chrome profile. Headless unless
+// headless is false; prepare(profile) can seed the profile before Chrome starts.
+export async function launch({extraArgs = [], headless = true, prepare} = {}) {
   const profile = mkdtempSync(join(tmpdir(), 'wp-assets-'));
-  const proc = spawn(CHROME, [`--user-data-dir=${profile}`, '--headless=new', '--remote-debugging-pipe',
+  prepare?.(profile);
+  const proc = spawn(CHROME, [`--user-data-dir=${profile}`, ...(headless ? ['--headless=new'] : []), '--remote-debugging-pipe',
     '--enable-unsafe-extension-debugging', '--no-first-run', '--no-default-browser-check', '--disable-sync',
     '--disable-background-networking', '--disable-component-update', '--disable-default-apps',
     '--password-store=basic', '--use-mock-keychain', '--hide-scrollbars', '--force-color-profile=srgb',
@@ -40,7 +42,7 @@ export async function launch({extraArgs = []} = {}) {
     rmSync(profile, {recursive: true, force: true, maxRetries: 10, retryDelay: 200});
   };
   await send('Browser.getVersion');
-  return {send, on: fn => listeners.push(fn), close};
+  return {send, on: fn => listeners.push(fn), close, pid: proc.pid};
 }
 
 export async function evaluate(cdp, sessionId, expression) {

@@ -1,6 +1,6 @@
 # Icons
 
-There's one design: a white crescent moon on an azure (`#0F7BEF`) squircle. [`icons/window-parker.svg`](../icons/window-parker.svg) is the master, and its tile fills its 128-unit view box. [`icons/window-parker-32.svg`](../icons/window-parker-32.svg) and [`icons/window-parker-16.svg`](../icons/window-parker-16.svg) are drawn for the toolbar: the tile sits on whole pixels inside a 1/16 margin, like Chrome's own toolbar icons, and the moon is a little larger. All three are editable vectors with no fonts, filters or embedded images. It's an original design, not a Chrome or Google mark.
+There's one design: a white crescent moon on an azure (`#0F7BEF`) squircle. [`icons/window-parker.svg`](../icons/window-parker.svg) is the master, and its tile fills its 128-unit view box. [`icons/window-parker-32.svg`](../icons/window-parker-32.svg) and [`icons/window-parker-16.svg`](../icons/window-parker-16.svg) are drawn for the toolbar: the tile fills the whole icon, the same size as other extensions' square toolbar icons, and the moon is a little larger so it stays clear at that size. All three are editable vectors with no fonts, filters or embedded images. It's an original design, not a Chrome or Google mark.
 
 | Where | File |
 | --- | --- |

@@ -2,15 +2,13 @@
 <style>
 .brand { position: absolute; left: 112px; top: 50%; transform: translateY(-50%); }
 .mark { width: 104px; height: 104px; margin-bottom: 28px; }
-.name { font-size: 58px; } .line { margin-top: 14px; font-size: 26px; line-height: 34px; }
-.window { left: 740px; top: 50%; transform: translateY(-50%); width: 560px; }
-.window .bar { position: relative; height: 30px; background: #e7eaef; }
-.window .bar i { position: absolute; top: 11px; width: 9px; height: 9px; border-radius: 50%; background: #ff5f57; }
-.window .bar i:nth-child(1) { left: 12px; } .window .bar i:nth-child(2) { left: 26px; background: #febc2e; } .window .bar i:nth-child(3) { left: 40px; background: #28c840; }
-.window img { display: block; width: 560px; }
+.name { font-size: 58px; }
+/* The right end of screenshot 2 (x 740 to 1272), pixel for pixel: the real popup over its Chrome window.
+   It stops just inside the window's rounded corner, so the menu button is whole and no white corner shows. */
+.shot { position: absolute; left: 768px; top: 75px; width: 532px; height: 410px; overflow: hidden; border-radius: 10px; outline: 1px solid var(--line); }
+.shot img { display: block; width: 1280px; margin-left: -740px; image-rendering: pixelated; }
 </style></head>
 <body>
-<div class="brand"><img class="mark" src="../../../icons/window-parker.svg" alt="">
-<div class="name">Window Parker</div><div class="line">Let idle windows rest.</div></div>
-<div class="window"><div class="bar"><i></i><i></i><i></i></div><img src="../../../store-listing/sources/ui/parked-light.png" alt=""></div>
+<div class="brand"><img class="mark" src="../../../icons/window-parker.svg" alt=""><div class="name">Window Parker</div></div>
+<div class="shot"><img src="../../../store-listing/screenshot-2-popup-1280x800.png" alt=""></div>
 </body></html>

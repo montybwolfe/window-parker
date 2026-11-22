@@ -2,8 +2,8 @@
 // for it (no enlarging or shrinking of another PNG). Development only.
 //   node tools/store-assets/icons.mjs 16 32 48 128     writes icons/window-parker-<size>.png
 //   node tools/store-assets/icons.mjs 256 512 1024     writes docs/assets/window-parker-<size>.png
-// The toolbar sizes have their own sources, with the tile on whole pixels inside
-// a 1/16 margin: 16 px from window-parker-16.svg and 32 px from window-parker-32.svg.
+// The toolbar sizes have their own sources, with a larger moon on a tile that
+// fills the canvas: 16 px from window-parker-16.svg and 32 px from window-parker-32.svg.
 // Every other size renders the master, window-parker.svg, whose tile fills the canvas.
 import {readFileSync, writeFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';

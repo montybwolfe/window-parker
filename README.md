@@ -4,11 +4,11 @@
 
 <p align="center"><a href="https://github.com/montybwolfe/window-parker/issues">Report a bug</a></p>
 
-If you keep lots of Chrome windows open (one per project, spread across desktops), each one keeps its selected tab awake, even when you haven't looked at it for hours. Chrome's Memory Saver sleeps background tabs, but never the selected one.
+Chrome's Memory Saver puts background tabs to sleep, but not the tab that's selected in each window. If you keep a lot of windows open (one per project, spread across desktops), that tab stays loaded in every one of them, even in windows you haven't looked at for hours.
 
-Window Parker parks windows you aren't using. After 15 minutes (you can change this), it switches the window to a small parking page, so the tab you were on becomes a background tab that Chrome can put to sleep. The parking page shows that tab's icon, title and website, so you can tell parked windows apart. Come back, stay a couple of seconds, and your tab returns.
+Window Parker parks the windows you aren't using. When a window has been idle for 15 minutes (you can change this), it selects a small parking page at the end of that window, so your tab becomes a background tab that Chrome can put to sleep. The parking page shows the icon, title and website of the tab you left, so you can tell parked windows apart. When you go back to the window and stay for a couple of seconds, your tab is selected again.
 
-Windows stay where they are, and tabs keep their order, pins and groups. Swiping quickly past a desktop won't wake its windows.
+It never moves windows or changes tab order, pins or groups. Swiping quickly through desktops doesn't wake the windows you pass.
 
 ## Install
 

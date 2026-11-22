@@ -1,0 +1,122 @@
+{
+  "capturedWith": "Chrome/158.0.8127.36",
+  "platform": "darwin",
+  "macOS": "27.2.1",
+  "screenshots": [
+    {
+      "file": "store-listing/screenshot-1-parked-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "alpha": false,
+      "sha256": "ba2dff5388fe621a2e27ee8f22d4bbe7c5fbfd4f60a7fd48a1eb05fd3c26b17e",
+      "inputs": {
+        "tools/store-assets/capture.mjs": "064dfb5f463737eb92ba8ab1e50b3f08a4b16750170f46a1863de58f498775f8",
+        "tools/store-assets/png.mjs": "d3ab133b55593ae4d36e91114d67e1e8d58a77de47c19ffaefb9d862a9cacb13",
+        "options.html": "1bcc785ae26caf98f66d6023ec4eb2734bbe35ab5fcf56838f48e57bf5c8e41b",
+        "options.js": "761eff5761f315d2f09390ab83c0806722d826f09d99a46c337744d0af6cc2f2",
+        "popup.html": "af3cc41db8cbbf6b3f48cace96f8f625998b3b96f57ce510d3ef0ba2b5cb1dd9",
+        "popup.js": "8b8b9c8ee7fb024ddab5715b7ac1c60d07235a0ad01aa16870dba92844e2031c",
+        "parked.html": "4cd135d272dd728a9c38d9aaa21c2d7384fd89354ddf669b98bcf711c7b03394",
+        "parked.js": "b490af1ab86710385ac75922542cb5a0a8ad3eb1c1c93c9431e6ca2965efbca1",
+        "ui.css": "30587a0499c7a8a7b608e9e242d15dfacdcc1f987d70ed2395ba9e51cea95a02",
+        "ui.js": "e0f1a1016a7411990151419cf02e64bc057834f1e6c68edc5d8069f95bd3e83f",
+        "theme.js": "641bfd599e9bc2154baaa35082cf071e8fd7af5f55d6dcac6a2ffc0f7f3ec222",
+        "settings.js": "f8d1e72ead7930871be134e0f36afc8d913dea308e4ad3f432af8199c3092599",
+        "icons/window-parker.svg": "4a27e7badaf25eaf88d27fb7eaf3a830d8e58619c23df3db444795537d37a223",
+        "icons/window-parker-32.png": "5646e563eb5df04891161159894d5b1fc42457b85d1bb1c5a8ee83a138418dac"
+      }
+    },
+    {
+      "file": "store-listing/screenshot-2-popup-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "alpha": false,
+      "sha256": "9005910ad50659858774043312e0812a0873cf675ea1eb2343685cd15643cef9",
+      "inputs": {
+        "tools/store-assets/capture.mjs": "064dfb5f463737eb92ba8ab1e50b3f08a4b16750170f46a1863de58f498775f8",
+        "tools/store-assets/png.mjs": "d3ab133b55593ae4d36e91114d67e1e8d58a77de47c19ffaefb9d862a9cacb13",
+        "options.html": "1bcc785ae26caf98f66d6023ec4eb2734bbe35ab5fcf56838f48e57bf5c8e41b",
+        "options.js": "761eff5761f315d2f09390ab83c0806722d826f09d99a46c337744d0af6cc2f2",
+        "popup.html": "af3cc41db8cbbf6b3f48cace96f8f625998b3b96f57ce510d3ef0ba2b5cb1dd9",
+        "popup.js": "8b8b9c8ee7fb024ddab5715b7ac1c60d07235a0ad01aa16870dba92844e2031c",
+        "parked.html": "4cd135d272dd728a9c38d9aaa21c2d7384fd89354ddf669b98bcf711c7b03394",
+        "parked.js": "b490af1ab86710385ac75922542cb5a0a8ad3eb1c1c93c9431e6ca2965efbca1",
+        "ui.css": "30587a0499c7a8a7b608e9e242d15dfacdcc1f987d70ed2395ba9e51cea95a02",
+        "ui.js": "e0f1a1016a7411990151419cf02e64bc057834f1e6c68edc5d8069f95bd3e83f",
+        "theme.js": "641bfd599e9bc2154baaa35082cf071e8fd7af5f55d6dcac6a2ffc0f7f3ec222",
+        "settings.js": "f8d1e72ead7930871be134e0f36afc8d913dea308e4ad3f432af8199c3092599",
+        "icons/window-parker.svg": "4a27e7badaf25eaf88d27fb7eaf3a830d8e58619c23df3db444795537d37a223",
+        "icons/window-parker-32.png": "5646e563eb5df04891161159894d5b1fc42457b85d1bb1c5a8ee83a138418dac"
+      }
+    },
+    {
+      "file": "store-listing/screenshot-3-settings-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "alpha": false,
+      "sha256": "2d4ec6c82594f6b343052fdb5609b9cf4861494c227c137ff1cc4d8e920ac17b",
+      "inputs": {
+        "tools/store-assets/capture.mjs": "064dfb5f463737eb92ba8ab1e50b3f08a4b16750170f46a1863de58f498775f8",
+        "tools/store-assets/png.mjs": "d3ab133b55593ae4d36e91114d67e1e8d58a77de47c19ffaefb9d862a9cacb13",
+        "options.html": "1bcc785ae26caf98f66d6023ec4eb2734bbe35ab5fcf56838f48e57bf5c8e41b",
+        "options.js": "761eff5761f315d2f09390ab83c0806722d826f09d99a46c337744d0af6cc2f2",
+        "popup.html": "af3cc41db8cbbf6b3f48cace96f8f625998b3b96f57ce510d3ef0ba2b5cb1dd9",
+        "popup.js": "8b8b9c8ee7fb024ddab5715b7ac1c60d07235a0ad01aa16870dba92844e2031c",
+        "parked.html": "4cd135d272dd728a9c38d9aaa21c2d7384fd89354ddf669b98bcf711c7b03394",
+        "parked.js": "b490af1ab86710385ac75922542cb5a0a8ad3eb1c1c93c9431e6ca2965efbca1",
+        "ui.css": "30587a0499c7a8a7b608e9e242d15dfacdcc1f987d70ed2395ba9e51cea95a02",
+        "ui.js": "e0f1a1016a7411990151419cf02e64bc057834f1e6c68edc5d8069f95bd3e83f",
+        "theme.js": "641bfd599e9bc2154baaa35082cf071e8fd7af5f55d6dcac6a2ffc0f7f3ec222",
+        "settings.js": "f8d1e72ead7930871be134e0f36afc8d913dea308e4ad3f432af8199c3092599",
+        "icons/window-parker.svg": "4a27e7badaf25eaf88d27fb7eaf3a830d8e58619c23df3db444795537d37a223",
+        "icons/window-parker-32.png": "5646e563eb5df04891161159894d5b1fc42457b85d1bb1c5a8ee83a138418dac"
+      }
+    },
+    {
+      "file": "store-listing/screenshot-4-sync-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "alpha": false,
+      "sha256": "2af07f36c92fa0fcbdbe1107ff832b4f23508b1bb25e700bee0d6c60741ebf9c",
+      "inputs": {
+        "tools/store-assets/capture.mjs": "064dfb5f463737eb92ba8ab1e50b3f08a4b16750170f46a1863de58f498775f8",
+        "tools/store-assets/png.mjs": "d3ab133b55593ae4d36e91114d67e1e8d58a77de47c19ffaefb9d862a9cacb13",
+        "options.html": "1bcc785ae26caf98f66d6023ec4eb2734bbe35ab5fcf56838f48e57bf5c8e41b",
+        "options.js": "761eff5761f315d2f09390ab83c0806722d826f09d99a46c337744d0af6cc2f2",
+        "popup.html": "af3cc41db8cbbf6b3f48cace96f8f625998b3b96f57ce510d3ef0ba2b5cb1dd9",
+        "popup.js": "8b8b9c8ee7fb024ddab5715b7ac1c60d07235a0ad01aa16870dba92844e2031c",
+        "parked.html": "4cd135d272dd728a9c38d9aaa21c2d7384fd89354ddf669b98bcf711c7b03394",
+        "parked.js": "b490af1ab86710385ac75922542cb5a0a8ad3eb1c1c93c9431e6ca2965efbca1",
+        "ui.css": "30587a0499c7a8a7b608e9e242d15dfacdcc1f987d70ed2395ba9e51cea95a02",
+        "ui.js": "e0f1a1016a7411990151419cf02e64bc057834f1e6c68edc5d8069f95bd3e83f",
+        "theme.js": "641bfd599e9bc2154baaa35082cf071e8fd7af5f55d6dcac6a2ffc0f7f3ec222",
+        "settings.js": "f8d1e72ead7930871be134e0f36afc8d913dea308e4ad3f432af8199c3092599",
+        "icons/window-parker.svg": "4a27e7badaf25eaf88d27fb7eaf3a830d8e58619c23df3db444795537d37a223",
+        "icons/window-parker-32.png": "5646e563eb5df04891161159894d5b1fc42457b85d1bb1c5a8ee83a138418dac"
+      }
+    },
+    {
+      "file": "store-listing/screenshot-5-dark-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "alpha": false,
+      "sha256": "88dfc077108efdea0d52fc8fded1e4cb269afc3d33aa5bea03cafa422f3b8c74",
+      "inputs": {
+        "tools/store-assets/capture.mjs": "064dfb5f463737eb92ba8ab1e50b3f08a4b16750170f46a1863de58f498775f8",
+        "tools/store-assets/png.mjs": "d3ab133b55593ae4d36e91114d67e1e8d58a77de47c19ffaefb9d862a9cacb13",
+        "options.html": "1bcc785ae26caf98f66d6023ec4eb2734bbe35ab5fcf56838f48e57bf5c8e41b",
+        "options.js": "761eff5761f315d2f09390ab83c0806722d826f09d99a46c337744d0af6cc2f2",
+        "popup.html": "af3cc41db8cbbf6b3f48cace96f8f625998b3b96f57ce510d3ef0ba2b5cb1dd9",
+        "popup.js": "8b8b9c8ee7fb024ddab5715b7ac1c60d07235a0ad01aa16870dba92844e2031c",
+        "parked.html": "4cd135d272dd728a9c38d9aaa21c2d7384fd89354ddf669b98bcf711c7b03394",
+        "parked.js": "b490af1ab86710385ac75922542cb5a0a8ad3eb1c1c93c9431e6ca2965efbca1",
+        "ui.css": "30587a0499c7a8a7b608e9e242d15dfacdcc1f987d70ed2395ba9e51cea95a02",
+        "ui.js": "e0f1a1016a7411990151419cf02e64bc057834f1e6c68edc5d8069f95bd3e83f",
+        "theme.js": "641bfd599e9bc2154baaa35082cf071e8fd7af5f55d6dcac6a2ffc0f7f3ec222",
+        "settings.js": "f8d1e72ead7930871be134e0f36afc8d913dea308e4ad3f432af8199c3092599",
+        "icons/window-parker.svg": "4a27e7badaf25eaf88d27fb7eaf3a830d8e58619c23df3db444795537d37a223",
+        "icons/window-parker-32.png": "5646e563eb5df04891161159894d5b1fc42457b85d1bb1c5a8ee83a138418dac"
+      }
+    }
+  ]
+}
